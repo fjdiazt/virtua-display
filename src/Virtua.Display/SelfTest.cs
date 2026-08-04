@@ -198,9 +198,12 @@ internal static class SelfTest
         var minimizeCheck = window.FindName("_minimizeToNotificationAreaCheck") as CheckBox;
         var closeCheck = window.FindName("_closeToNotificationAreaCheck") as CheckBox;
         var start = Find<Button>(window, "_startStopButton");
-        var displayGroup = Find<GroupBox>(window, "displayGroup");
-        var behaviorGroup = Find<GroupBox>(window, "behaviorGroup");
-        var applicationBehaviorGroup = Find<GroupBox>(window, "applicationBehaviorGroup");
+        var appTitle = window.FindName("appTitle") as TextBlock;
+        var appSubtitle = window.FindName("appSubtitle") as TextBlock;
+        var pocText = window.FindName("pocText") as TextBlock;
+        var displaySection = window.FindName("displaySection") as Border;
+        var behaviorSection = window.FindName("behaviorSection") as Border;
+        var applicationSection = window.FindName("applicationSection") as Border;
         var resolutionLayout = Find<Grid>(window, "resolutionLayout");
         var widthLabel = Find<Label>(window, "widthLabel");
         var heightLabel = Find<Label>(window, "heightLabel");
@@ -225,10 +228,31 @@ internal static class SelfTest
             "dark tray menu chrome");
         Check(Equals(window.Background, window.FindResource("WindowBackgroundBrush")),
             "dark window theme");
+        Check(window.FontFamily.Source == "Segoe UI Variable Text", "modern window typography");
+        Check(appTitle?.Text == "Virtua Display" && appTitle.FontSize == 28,
+            "modern app heading");
+        Check(appSubtitle?.Text == "One focused virtual display.", "app subtitle");
+        Check(pocText?.Text == "POC", "proof-of-concept badge");
+        Check(displaySection is not null && behaviorSection is not null &&
+              applicationSection is not null,
+            "divider-based sections");
+        Check(window.FindName("displayGroup") is null &&
+              window.FindName("behaviorGroup") is null &&
+              window.FindName("applicationBehaviorGroup") is null,
+            "legacy group boxes removed");
         aspect.ApplyTemplate();
-        Check(aspect.Template.FindName("DarkComboBackground", aspect) is Border background &&
-              Equals(background.Background, window.FindResource("ControlBackgroundBrush")),
-            "dark combo box chrome");
+        width.ApplyTemplate();
+        start.ApplyTemplate();
+        primaryCheck.ApplyTemplate();
+        Check(aspect.Template.FindName("ComboBorder", aspect) is Border comboBorder &&
+              Equals(comboBorder.Background, window.FindResource("ControlBackgroundBrush")),
+            "modern combo box chrome");
+        Check(width.Template.FindName("InputBorder", width) is Border,
+            "modern text box chrome");
+        Check(start.Template.FindName("ButtonBorder", start) is Border,
+            "modern primary button chrome");
+        Check(primaryCheck.Template.FindName("CheckBorder", primaryCheck) is Border,
+            "modern check box chrome");
         Check(aspect.SelectedItem?.ToString() == "All aspect ratios", "all-aspects default");
         Check(preset.SelectedItem?.ToString() == "Match primary display", "match-primary default");
         Check(width.Text == "3440" && height.Text == "1440", "copy-primary dimensions");
@@ -270,10 +294,10 @@ internal static class SelfTest
             "close-to-notification-area option");
         Check(closeCheck?.IsChecked == false, "close-to-notification-area default");
         Check(start.Content?.ToString() == "Start", "start button default");
-        Check(displayGroup.Header?.ToString() == "Display", "display group");
-        Check(behaviorGroup.Header?.ToString() == "Display behavior", "display behavior group");
-        Check(applicationBehaviorGroup.Header?.ToString() == "Application behavior",
-            "application behavior group");
+        Check(displaySection?.BorderThickness.Bottom == 1, "display section divider");
+        Check(behaviorSection?.BorderThickness.Bottom == 1, "behavior section divider");
+        Check(applicationSection?.BorderThickness.Bottom == 1,
+            "application section divider");
         Check(Grid.GetColumn(width) == 0 && Grid.GetRow(width) == 5 &&
               Grid.GetColumn(height) == 1 && Grid.GetRow(height) == 5 &&
               Grid.GetColumn(refresh) == 3 && Grid.GetRow(refresh) == 5,
@@ -366,9 +390,15 @@ internal static class SelfTest
         var layout = Find<Grid>(window, "resolutionLayout");
 
         Check(aspectLock.IsChecked != true &&
-              aspectLock.Content?.ToString() == "🔓" &&
+              aspectLock.Content?.ToString() == "\uE785" &&
               AutomationProperties.GetName(aspectLock) == "Lock aspect ratio",
             "aspect lock default");
+        aspectLock.ApplyTemplate();
+        Check(aspectLock.Template.FindName("LockButtonBorder", aspectLock) is Border,
+            "modern aspect lock chrome");
+        Check(aspectLock.FontFamily.Source == "Segoe Fluent Icons",
+            "Fluent aspect lock icon");
+
         Check(layout.ColumnDefinitions.Count == 4 &&
               Grid.GetColumn(width) == 0 &&
               Grid.GetColumn(height) == 1 &&
@@ -376,7 +406,7 @@ internal static class SelfTest
             "aspect lock layout");
 
         aspectLock.IsChecked = true;
-        Check(aspectLock.Content?.ToString() == "🔒" &&
+        Check(aspectLock.Content?.ToString() == "\uE72E" &&
               AutomationProperties.GetName(aspectLock) == "Unlock aspect ratio",
             "aspect lock enabled");
 
@@ -394,7 +424,7 @@ internal static class SelfTest
         aspectLock.IsChecked = false;
         width.Text = "invalid";
         aspectLock.IsChecked = true;
-        Check(aspectLock.IsChecked != true && aspectLock.Content?.ToString() == "🔓",
+        Check(aspectLock.IsChecked != true && aspectLock.Content?.ToString() == "\uE785",
             "invalid dimensions refuse aspect lock");
 
         window.SetUiState("Active", false, true);

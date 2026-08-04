@@ -1,7 +1,9 @@
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -46,6 +48,7 @@ public sealed partial class MainWindow : Window
         DriverStatus? driverStatus = null)
     {
         InitializeComponent();
+        SourceInitialized += (_, _) => ApplyDarkCaption();
         _driverStatus = driverStatus ?? SudoVdaClient.Probe();
         _primaryMode = primaryMode ?? DisplayController.GetPrimaryMode();
         _lastValidSettings = settings ?? UserSettingsStore.Load(_primaryMode);
@@ -244,7 +247,7 @@ public sealed partial class MainWindow : Window
         var accessibleName = locked
             ? "Unlock aspect ratio"
             : "Lock aspect ratio";
-        _aspectLockButton.Content = locked ? "🔒" : "🔓";
+        _aspectLockButton.Content = locked ? "\uE72E" : "\uE785";
         _aspectLockButton.ToolTip = accessibleName;
         AutomationProperties.SetName(_aspectLockButton, accessibleName);
     }
@@ -761,6 +764,23 @@ public sealed partial class MainWindow : Window
         }));
     }
 
+    private void ApplyDarkCaption()
+    {
+        var handle = new WindowInteropHelper(this).Handle;
+        var enabled = 1;
+        var captionColor = 0x00201511;
+        var textColor = 0x00FCF7F5;
+        DwmSetWindowAttribute(handle, 20, ref enabled, sizeof(int));
+        DwmSetWindowAttribute(handle, 35, ref captionColor, sizeof(int));
+        DwmSetWindowAttribute(handle, 36, ref textColor, sizeof(int));
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(
+        IntPtr windowHandle,
+        int attribute,
+        ref int value,
+        int valueSize);
     private sealed record AspectFilterChoice(string Label, ResolutionAspectRatio? Ratio)
     {
         public override string ToString() => Label;

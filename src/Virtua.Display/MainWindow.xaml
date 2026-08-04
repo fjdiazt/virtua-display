@@ -3,204 +3,285 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:automation="clr-namespace:System.Windows.Automation;assembly=PresentationCore"
         Title="Virtua Display"
-        Width="520"
+        Width="560"
         SizeToContent="Height"
         ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource WindowBackgroundBrush}"
-        Foreground="{DynamicResource ForegroundBrush}">
-    <Grid Margin="18">
+        Foreground="{DynamicResource ForegroundBrush}"
+        FontFamily="Segoe UI Variable Text">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <GroupBox x:Name="displayGroup"
-                  Grid.Row="0"
-                  Header="Display"
-                  Margin="0,0,0,12">
-            <Grid x:Name="resolutionLayout">
+        <Border Grid.Row="0"
+                Padding="28,22,28,20"
+                Background="{DynamicResource HeaderBackgroundBrush}"
+                BorderBrush="{DynamicResource DividerBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="appTitle"
+                               Text="Virtua Display"
+                               FontSize="28"
+                               FontWeight="Bold" />
+                    <Border Margin="12,2,0,0"
+                            Padding="8,3"
+                            VerticalAlignment="Center"
+                            Background="{DynamicResource AccentSoftBrush}"
+                            BorderBrush="{DynamicResource AccentPressedBrush}"
+                            BorderThickness="1"
+                            CornerRadius="10">
+                        <TextBlock x:Name="pocText"
+                                   Text="POC"
+                                   Foreground="{DynamicResource AccentHoverBrush}"
+                                   FontSize="10"
+                                   FontWeight="Bold" />
+                    </Border>
+                </StackPanel>
+                <TextBlock x:Name="appSubtitle"
+                           Margin="0,5,0,0"
+                           Text="One focused virtual display."
+                           Foreground="{DynamicResource MutedForegroundBrush}"
+                           FontSize="14" />
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="28,20,28,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border x:Name="displaySection"
+                    Grid.Row="0"
+                    Padding="0,0,0,20"
+                    BorderBrush="{DynamicResource DividerBrush}"
+                    BorderThickness="0,0,0,1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="DISPLAY" Style="{StaticResource SectionTitleStyle}" />
+                    <Grid x:Name="resolutionLayout" Grid.Row="1" Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="50" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Label x:Name="aspectLabel"
+                               Grid.Row="0"
+                               Grid.ColumnSpan="4"
+                               Content="Aspect ratio"
+                               Target="{Binding ElementName=_aspectCombo}" />
+                        <ComboBox x:Name="_aspectCombo"
+                                  Grid.Row="1"
+                                  Grid.ColumnSpan="4"
+                                  Margin="0,0,0,12"
+                                  automation:AutomationProperties.AutomationId="aspectCombo"
+                                  TabIndex="0" />
+
+                        <Label x:Name="presetLabel"
+                               Grid.Row="2"
+                               Grid.ColumnSpan="4"
+                               Content="Resolution preset"
+                               Target="{Binding ElementName=_presetCombo}" />
+                        <ComboBox x:Name="_presetCombo"
+                                  Grid.Row="3"
+                                  Grid.ColumnSpan="4"
+                                  Margin="0,0,0,12"
+                                  automation:AutomationProperties.AutomationId="presetCombo"
+                                  TabIndex="1" />
+
+                        <Label x:Name="widthLabel"
+                               Grid.Row="4"
+                               Grid.Column="0"
+                               Margin="0,0,6,0"
+                               Content="Width"
+                               Target="{Binding ElementName=_widthText}" />
+                        <Label x:Name="heightLabel"
+                               Grid.Row="4"
+                               Grid.Column="1"
+                               Margin="6,0"
+                               Content="Height"
+                               Target="{Binding ElementName=_heightText}" />
+                        <Label x:Name="refreshLabel"
+                               Grid.Row="4"
+                               Grid.Column="3"
+                               Margin="6,0,0,0"
+                               Content="Refresh rate"
+                               Target="{Binding ElementName=_refreshCombo}" />
+
+                        <TextBox x:Name="_widthText"
+                                 Grid.Row="5"
+                                 Grid.Column="0"
+                                 Margin="0,0,6,0"
+                                 automation:AutomationProperties.AutomationId="widthText"
+                                 TabIndex="2" />
+                        <TextBox x:Name="_heightText"
+                                 Grid.Row="5"
+                                 Grid.Column="1"
+                                 Margin="6,0"
+                                 automation:AutomationProperties.AutomationId="heightText"
+                                 TabIndex="3" />
+                        <ToggleButton x:Name="_aspectLockButton"
+                                      Grid.Row="5"
+                                      Grid.Column="2"
+                                      Margin="6,0"
+                                      Content="&#xE785;"
+                                      ToolTip="Lock aspect ratio"
+                                      automation:AutomationProperties.AutomationId="aspectLockButton"
+                                      automation:AutomationProperties.Name="Lock aspect ratio"
+                                      TabIndex="4" />
+                        <ComboBox x:Name="_refreshCombo"
+                                  Grid.Row="5"
+                                  Grid.Column="3"
+                                  Margin="6,0,0,0"
+                                  automation:AutomationProperties.AutomationId="refreshCombo"
+                                  TabIndex="5" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Border x:Name="behaviorSection"
+                    Grid.Row="1"
+                    Padding="0,18"
+                    BorderBrush="{DynamicResource DividerBrush}"
+                    BorderThickness="0,0,0,1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="DISPLAY BEHAVIOR" Style="{StaticResource SectionTitleStyle}" />
+                    <Grid x:Name="behaviorLayout" Grid.Row="1" Margin="0,13,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <CheckBox x:Name="_primaryCheck"
+                                  Grid.Column="0"
+                                  Content="Make primary"
+                                  IsChecked="True"
+                                  Margin="0,0,12,0"
+                                  automation:AutomationProperties.AutomationId="primaryCheck"
+                                  TabIndex="6" />
+                        <CheckBox x:Name="_routingCheck"
+                                  Grid.Column="1"
+                                  Content="Route new windows"
+                                  IsChecked="True"
+                                  Margin="12,0,0,0"
+                                  automation:AutomationProperties.AutomationId="routingCheck"
+                                  TabIndex="7" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Border x:Name="applicationSection"
+                    Grid.Row="2"
+                    Padding="0,18"
+                    BorderBrush="{DynamicResource DividerBrush}"
+                    BorderThickness="0,0,0,1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="APPLICATION" Style="{StaticResource SectionTitleStyle}" />
+                    <Grid Grid.Row="1" Margin="0,13,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <CheckBox x:Name="_startWithWindowsCheck"
+                                  Grid.Row="0"
+                                  Grid.Column="0"
+                                  Content="Start with Windows"
+                                  Margin="0,0,12,0"
+                                  automation:AutomationProperties.AutomationId="startWithWindowsCheck"
+                                  TabIndex="8" />
+                        <CheckBox x:Name="_minimizeToNotificationAreaCheck"
+                                  Grid.Row="0"
+                                  Grid.Column="1"
+                                  Content="Minimize to notification area"
+                                  Margin="12,0,0,0"
+                                  automation:AutomationProperties.AutomationId="minimizeToNotificationAreaCheck"
+                                  TabIndex="9" />
+                        <CheckBox x:Name="_closeToNotificationAreaCheck"
+                                  Grid.Row="1"
+                                  Grid.Column="1"
+                                  Content="Close to notification area"
+                                  Margin="12,9,0,0"
+                                  automation:AutomationProperties.AutomationId="closeToNotificationAreaCheck"
+                                  TabIndex="10" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Grid x:Name="footerLayout" Grid.Row="3" Margin="0,20,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="44" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
-                <Label x:Name="aspectLabel"
-                       Grid.Row="0"
-                       Grid.ColumnSpan="4"
-                       Content="Aspect ratio"
-                       Target="{Binding ElementName=_aspectCombo}" />
-                <ComboBox x:Name="_aspectCombo"
-                          Grid.Row="1"
-                          Grid.ColumnSpan="4"
-                          Margin="0,0,0,10"
-                          automation:AutomationProperties.AutomationId="aspectCombo"
-                          TabIndex="0" />
-
-                <Label x:Name="presetLabel"
-                       Grid.Row="2"
-                       Grid.ColumnSpan="4"
-                       Content="Resolution preset"
-                       Target="{Binding ElementName=_presetCombo}" />
-                <ComboBox x:Name="_presetCombo"
-                          Grid.Row="3"
-                          Grid.ColumnSpan="4"
-                          Margin="0,0,0,10"
-                          automation:AutomationProperties.AutomationId="presetCombo"
-                          TabIndex="1" />
-
-                <Label x:Name="widthLabel"
-                       Grid.Row="4"
-                       Grid.Column="0"
-                       Margin="0,0,6,0"
-                       Content="Width"
-                       Target="{Binding ElementName=_widthText}" />
-                <Label x:Name="heightLabel"
-                       Grid.Row="4"
-                       Grid.Column="1"
-                       Margin="6,0"
-                       Content="Height"
-                       Target="{Binding ElementName=_heightText}" />
-                <Label x:Name="refreshLabel"
-                       Grid.Row="4"
-                       Grid.Column="3"
-                       Margin="6,0,0,0"
-                       Content="Refresh rate"
-                       Target="{Binding ElementName=_refreshCombo}" />
-
-                <TextBox x:Name="_widthText"
-                         Grid.Row="5"
-                         Grid.Column="0"
-                         Margin="0,0,6,0"
-                         automation:AutomationProperties.AutomationId="widthText"
-                         TabIndex="2" />
-                <TextBox x:Name="_heightText"
-                         Grid.Row="5"
-                         Grid.Column="1"
-                         Margin="6,0"
-                         automation:AutomationProperties.AutomationId="heightText"
-                         TabIndex="3" />
-                <ToggleButton x:Name="_aspectLockButton"
-                              Grid.Row="5"
-                              Grid.Column="2"
-                              Margin="6,0"
-                              Content="🔓"
-                              ToolTip="Lock aspect ratio"
-                              automation:AutomationProperties.AutomationId="aspectLockButton"
-                              automation:AutomationProperties.Name="Lock aspect ratio"
-                              TabIndex="4" />
-                <ComboBox x:Name="_refreshCombo"
-                          Grid.Row="5"
-                          Grid.Column="3"
-                          Margin="6,0,0,0"
-                          automation:AutomationProperties.AutomationId="refreshCombo"
-                          TabIndex="5" />
+                <Border Grid.Column="0"
+                        Margin="0,0,16,0"
+                        Padding="11,7"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Background="{DynamicResource ControlBackgroundBrush}"
+                        BorderBrush="{DynamicResource ControlBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="13">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="_statusIndicator"
+                                   Grid.Column="0"
+                                   Text="●"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource ErrorBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,7,0"
+                                   automation:AutomationProperties.AutomationId="statusIndicator" />
+                        <TextBlock x:Name="_statusLabel"
+                                   Grid.Column="1"
+                                   MaxWidth="300"
+                                   Text="Stopped"
+                                   Foreground="{DynamicResource MutedForegroundBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center"
+                                   automation:AutomationProperties.AutomationId="statusLabel" />
+                    </Grid>
+                </Border>
+                <Button x:Name="_startStopButton"
+                        Grid.Column="1"
+                        Width="116"
+                        Content="Start"
+                        IsDefault="True"
+                        automation:AutomationProperties.AutomationId="startStopButton"
+                        TabIndex="11" />
             </Grid>
-        </GroupBox>
-
-        <GroupBox x:Name="behaviorGroup"
-                  Grid.Row="1"
-                  Header="Display behavior">
-            <Grid x:Name="behaviorLayout">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <CheckBox x:Name="_primaryCheck"
-                          Grid.Column="0"
-                          Content="Make primary"
-                          IsChecked="True"
-                          Margin="0,0,12,0"
-                          automation:AutomationProperties.AutomationId="primaryCheck"
-                          TabIndex="6" />
-                <CheckBox x:Name="_routingCheck"
-                          Grid.Column="1"
-                          Content="Route new windows"
-                          IsChecked="True"
-                          Margin="12,0,0,0"
-                          automation:AutomationProperties.AutomationId="routingCheck"
-                          TabIndex="7" />
-            </Grid>
-        </GroupBox>
-
-        <GroupBox x:Name="applicationBehaviorGroup"
-                  Grid.Row="2"
-                  Header="Application behavior"
-                  Margin="0,12,0,0">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <CheckBox x:Name="_startWithWindowsCheck"
-                          Grid.Row="0"
-                          Grid.Column="0"
-                          Content="Start with Windows"
-                          Margin="0,0,12,0"
-                          automation:AutomationProperties.AutomationId="startWithWindowsCheck"
-                          TabIndex="8" />
-                <CheckBox x:Name="_minimizeToNotificationAreaCheck"
-                          Grid.Row="0"
-                          Grid.Column="1"
-                          Content="Minimize to notification area"
-                          Margin="12,0,0,0"
-                          automation:AutomationProperties.AutomationId="minimizeToNotificationAreaCheck"
-                          TabIndex="9" />
-                <CheckBox x:Name="_closeToNotificationAreaCheck"
-                          Grid.Row="1"
-                          Grid.Column="1"
-                          Content="Close to notification area"
-                          Margin="12,8,0,0"
-                          automation:AutomationProperties.AutomationId="closeToNotificationAreaCheck"
-                          TabIndex="10" />
-            </Grid>
-        </GroupBox>
-
-        <Grid x:Name="footerLayout"
-              Grid.Row="3"
-              Margin="0,16,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock x:Name="_statusIndicator"
-                       Grid.Column="0"
-                       Text="●"
-                       FontSize="16"
-                       Foreground="{DynamicResource ErrorBrush}"
-                       VerticalAlignment="Center"
-                       Margin="0,0,8,0"
-                       automation:AutomationProperties.AutomationId="statusIndicator" />
-            <TextBlock x:Name="_statusLabel"
-                       Grid.Column="1"
-                       Text="Stopped"
-                       Foreground="{DynamicResource MutedForegroundBrush}"
-                       TextTrimming="CharacterEllipsis"
-                       VerticalAlignment="Center"
-                       automation:AutomationProperties.AutomationId="statusLabel" />
-            <Button x:Name="_startStopButton"
-                    Grid.Column="2"
-                    Content="Start"
-                    IsDefault="True"
-                    automation:AutomationProperties.AutomationId="startStopButton"
-                    TabIndex="10" />
         </Grid>
     </Grid>
 </Window>
