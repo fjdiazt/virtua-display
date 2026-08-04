@@ -46,7 +46,7 @@ Closing the app normally removes its virtual display and restores the previous d
 - Only one virtual display is supported.
 - Window routing applies only to newly created top-level windows.
 - Elevated, protected, and system windows may not move.
-- Force-closing the process can leave the virtual display active until SudoVDA cleans it up.
+- Force-closing can leave the display active briefly. If it still exists when Virtua Display reopens, the app reconnects automatically; otherwise SudoVDA removes it through its watchdog.
 
 ## Building from source
 
