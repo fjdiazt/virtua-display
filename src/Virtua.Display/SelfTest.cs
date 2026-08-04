@@ -452,12 +452,21 @@ internal static class SelfTest
         Check(!ResolutionOptions.TryParseMode("1920", "nope", 60, out _, out _, out var heightError) &&
               heightError == "Height must be 480–4320.", "nonnumeric height");
 
-        var path = $@"Software\VRPrivacy\Tests\{Guid.NewGuid():N}";
+        Check(UserSettingsStore.DefaultPath == @"Software\Virtua\Display",
+            "settings registry path");
+        var path = $@"Software\Virtua\Display\Tests\{Guid.NewGuid():N}";
         try
         {
             var expected = new UserSettings("Custom", 2000, 1000, 144, false, true, true, true);
             UserSettingsStore.Save(expected, path);
             Check(UserSettingsStore.Load(primary, path) == expected, "settings registry round-trip");
+
+            using (var key = Registry.CurrentUser.CreateSubKey(path))
+                key.SetValue("SudoVDA GUI", "obsolete", RegistryValueKind.String);
+            StartupRegistration.RemoveLegacy(path);
+            using (var key = Registry.CurrentUser.OpenSubKey(path))
+                Check(key?.GetValue("SudoVDA GUI") is null,
+                    "legacy startup registration removed");
 
             const string fakeExecutable = @"C:\Apps\VirtuaDisplay.exe";
             const string startupValue = "Virtua Display Test";

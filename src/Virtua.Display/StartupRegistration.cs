@@ -6,7 +6,16 @@ namespace Virtua.Display;
 internal static class StartupRegistration
 {
     private const string RunPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "SudoVDA GUI";
+    private const string ValueName = "Virtua Display";
+    private const string LegacyValueName = "SudoVDA GUI";
+
+    internal static void RemoveLegacy(
+        string registryPath = RunPath,
+        string valueName = LegacyValueName)
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(registryPath, writable: true);
+        key?.DeleteValue(valueName, throwOnMissingValue: false);
+    }
 
     internal static string BuildCommand(string executablePath)
     {

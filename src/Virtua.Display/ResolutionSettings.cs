@@ -167,7 +167,7 @@ internal static class ResolutionOptions
 
 internal static class UserSettingsStore
 {
-    internal const string DefaultPath = @"Software\VRPrivacy";
+    internal const string DefaultPath = @"Software\Virtua\Display";
 
     internal static UserSettings Load(DisplayMode primary, string path = DefaultPath)
     {

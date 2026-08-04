@@ -29,6 +29,8 @@ public partial class App : Application
             return;
         }
 
+        StartupRegistration.RemoveLegacy();
+
         _singleInstanceMutex = TryAcquireSingleInstance(SingleInstanceName);
         if (_singleInstanceMutex is null)
         {
