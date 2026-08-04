@@ -6,9 +6,6 @@
 
 A small Windows app for creating and managing one temporary virtual display.
 
-> [!IMPORTANT]
-> Virtua Display is a proof of concept.
-
 ![Virtua Display](docs/images/virtua-display.png)
 
 ## Features
