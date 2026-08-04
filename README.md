@@ -1,51 +1,50 @@
-<p align=\
+<p align="center">
+  <img src="assets/logo.png" alt="Virtua Display logo" width="480">
+</p>
 
-A small Windows GUI for creating and managing a temporary virtual display with the SudoVDA driver.
+# Virtua Display
+
+A small Windows app for creating and managing one temporary virtual display.
 
 > [!IMPORTANT]
-> This project is a proof of concept. It currently requires Apollo to be installed because Apollo provides the SudoVDA driver. A future version should remove this dependency.
+> Virtua Display is a proof of concept.
 
 ![Virtua Display](docs/images/virtua-display.png)
 
 ## Features
 
-- Create one temporary virtual display.
-- Position the virtual display centered above the current primary display.
-- Choose its aspect ratio, resolution, and refresh rate.
-- Match the current primary display.
-- Lock the aspect ratio while entering a custom resolution.
-- Optionally make the virtual display primary.
-- Optionally move newly opened windows onto it.
-- Move windows back to the original primary display, remove the virtual display, and restore the previous layout when stopped.
-- Start the app when signing in to Windows.
-- Minimize the app to the Windows notification area.
+- Choose an aspect ratio, resolution, and refresh rate.
+- Match the primary display or enter a custom resolution.
+- Lock the aspect ratio while editing width or height.
+- Place the virtual display centered above the primary display.
+- Optionally make it primary and route new windows to it.
+- Move windows back and restore the previous layout when stopped.
+- Start with Windows, minimize to the notification area, or close to the notification area.
 
-## Requirements
+## Install
 
-- Windows 10 or Windows 11, x64
-- Apollo with its SudoVDA driver installed
-- .NET 10 Desktop Runtime
+Virtua Display supports Windows 10 and Windows 11 on x64 PCs.
+
+Download and run `VirtuaDisplay-Setup-<version>.exe`. The installer includes the app and installs SudoVDA when needed. Apollo is not required.
+
+The proof-of-concept installer is unsigned, so Windows SmartScreen may show a warning. A compatible SudoVDA installation from Apollo is reused. Setup stops if it finds an incompatible version. Uninstalling Virtua Display leaves the shared SudoVDA driver and certificate installed.
 
 ## Usage
 
-1. Run `VirtuaDisplay.exe`.
+1. Open **Virtua Display**.
 2. Choose a resolution preset, or enter a custom width and height.
-3. Select the refresh rate.
-4. Enable **Make primary** or **Route new windows** if wanted.
-5. Select **Start** to create the virtual display.
-6. Select **Stop** when finished.
+3. Select the refresh rate and any wanted display behavior.
+4. Select **Start**.
+5. Select **Stop** when finished.
 
-Closing the app also removes its virtual display and restores the previous display layout.
+Closing the app normally removes its virtual display and restores the previous display layout.
 
-**Start with Windows** launches the app, not the virtual display. When both startup and notification-area options are enabled, the app starts hidden. Select the notification icon to reopen it, or right-click the icon to start or stop the virtual display or exit.
-
-The Minimize button hides the app when **Minimize to notification area** is enabled. The Close button hides it when **Close to notification area** is enabled; use **Exit** from the notification-area menu to quit.
+**Start with Windows** launches the app, not the virtual display. The notification-area icon can open the app, start or stop the display, and exit. The Minimize and Close buttons hide the app only when their matching notification-area options are enabled.
 
 ## Limitations
 
-- This is a proof of concept, not a finished product.
 - Only one virtual display is supported.
-- Only windows opened after routing starts are moved.
+- Window routing applies only to newly created top-level windows.
 - Elevated, protected, and system windows may not move.
 - Force-closing the process can leave the virtual display active until SudoVDA cleans it up.
 
@@ -57,8 +56,12 @@ Install the .NET 10 SDK, then run:
 dotnet build src\Virtua.Display\Virtua.Display.csproj -c Release
 ```
 
-The executable is written to:
+To build the installer, install Inno Setup 6 and run:
 
-```text
-src\Virtua.Display\bin\Release\net10.0-windows\VirtuaDisplay.exe
+```powershell
+.\packaging\build-installer.ps1 -Version 0.1.0
 ```
+
+Generated files are written under `artifacts`.
+
+See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for bundled dependency notices.
