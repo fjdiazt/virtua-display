@@ -450,10 +450,8 @@ public sealed partial class MainWindow : Window
             return;
         _recoveryAttempted = true;
 
-        var recovery = SessionRecoveryStore.Load();
-        if (recovery is null)
+        if (_driverStatus.Kind != DriverStatusKind.Ready)
             return;
-
         await _lifecycleGate.WaitAsync();
         try
         {
@@ -472,14 +470,18 @@ public sealed partial class MainWindow : Window
                 driver = SudoVdaClient.Open();
                 driver.Ping();
                 if (!DisplayController.TryGetOwnedDisplayName(
-                        recovery.Display, MonitorGuid, out var deviceName))
+                        MonitorGuid, out var deviceName))
                 {
-                    SessionRecoveryStore.Clear();
                     driver.Dispose();
                     driver = null;
                     SetUiState("Stopped", false, false);
                     return;
                 }
+
+                var active = DisplayController.Capture();
+                var activeDisplay = active.Displays.Single(display =>
+                    string.Equals(display.DeviceName, deviceName, StringComparison.OrdinalIgnoreCase));
+                var snapshot = DisplayController.CreateFallbackRecoverySnapshot(active, deviceName);
 
                 var watchdog = driver.GetWatchdog();
                 watchdogCancellation = new CancellationTokenSource();
@@ -492,7 +494,7 @@ public sealed partial class MainWindow : Window
                 _session = new MonitorSession(
                     MonitorGuid,
                     driver,
-                    recovery.Snapshot,
+                    snapshot,
                     deviceName,
                     watchdogCancellation,
                     watchdogTask,
@@ -500,7 +502,7 @@ public sealed partial class MainWindow : Window
                 driver = null;
                 watchdogCancellation = null;
                 router = null;
-                SetUiState($"Active: {deviceName} — {recovery.Mode}", false, true);
+                SetUiState($"Active: {deviceName} — {activeDisplay.Mode}", false, true);
             }
             catch (Exception exception)
             {
@@ -569,7 +571,6 @@ public sealed partial class MainWindow : Window
                 var watchdog = driver.GetWatchdog();
                 var addedDisplay = driver.Add(mode, MonitorGuid);
                 added = true;
-                SessionRecoveryStore.Save(new SessionRecoveryState(addedDisplay, mode, snapshot));
 
                 watchdogCancellation = new CancellationTokenSource();
                 watchdogTask = RunWatchdogAsync(driver, watchdog.Timeout, watchdogCancellation.Token);
@@ -669,18 +670,8 @@ public sealed partial class MainWindow : Window
             {
                 errors.Add($"remove virtual display: {exception.Message}");
             }
-
             if (removed)
             {
-                try
-                {
-                    SessionRecoveryStore.Clear();
-                }
-                catch (Exception exception)
-                {
-                    errors.Add($"clear recovery state: {exception.Message}");
-                }
-
                 session.WatchdogCancellation.Dispose();
                 session.Driver.Dispose();
                 _session = null;
@@ -734,7 +725,6 @@ public sealed partial class MainWindow : Window
             await TryCleanupAsync(() =>
             {
                 driver.Remove(MonitorGuid);
-                SessionRecoveryStore.Clear();
                 return Task.CompletedTask;
             }, "remove virtual display", errors);
         }

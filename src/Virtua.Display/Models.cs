@@ -16,8 +16,3 @@ internal sealed record DisplayState(
 internal sealed record DisplaySnapshot(IReadOnlyList<DisplayState> Displays);
 
 internal readonly record struct AddedDisplay(long AdapterLuid, uint TargetId);
-
-internal sealed record SessionRecoveryState(
-    AddedDisplay Display,
-    DisplayMode Mode,
-    DisplaySnapshot Snapshot);

@@ -22,25 +22,10 @@
                 BorderBrush="{DynamicResource DividerBrush}"
                 BorderThickness="0,0,0,1">
             <StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock x:Name="appTitle"
-                               Text="Virtua Display"
-                               FontSize="28"
-                               FontWeight="Bold" />
-                    <Border Margin="12,2,0,0"
-                            Padding="8,3"
-                            VerticalAlignment="Center"
-                            Background="{DynamicResource AccentSoftBrush}"
-                            BorderBrush="{DynamicResource AccentPressedBrush}"
-                            BorderThickness="1"
-                            CornerRadius="10">
-                        <TextBlock x:Name="pocText"
-                                   Text="POC"
-                                   Foreground="{DynamicResource AccentHoverBrush}"
-                                   FontSize="10"
-                                   FontWeight="Bold" />
-                    </Border>
-                </StackPanel>
+                <TextBlock x:Name="appTitle"
+                           Text="Virtua Display"
+                           FontSize="28"
+                           FontWeight="Bold" />
                 <TextBlock x:Name="appSubtitle"
                            Margin="0,5,0,0"
                            Text="One focused virtual display."

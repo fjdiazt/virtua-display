@@ -24,7 +24,7 @@ Virtua Display supports Windows 10 and Windows 11 on x64 PCs.
 
 Download and run `VirtuaDisplay-Setup-<version>.exe`. The installer includes the app and installs SudoVDA when needed. Apollo is not required.
 
-The proof-of-concept installer is unsigned, so Windows SmartScreen may show a warning. A compatible SudoVDA installation from Apollo is reused. Setup stops if it finds an incompatible version. Uninstalling Virtua Display leaves the shared SudoVDA driver and certificate installed.
+The installer is unsigned, so Windows SmartScreen may show a warning. A compatible SudoVDA installation from Apollo is reused. Setup stops if it finds an incompatible version. Uninstalling Virtua Display leaves the shared SudoVDA driver and certificate installed.
 
 ## Usage
 

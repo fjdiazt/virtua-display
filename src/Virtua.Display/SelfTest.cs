@@ -68,17 +68,25 @@ internal static class SelfTest
         Check(DisplayController.IsSupported(new DisplayMode(640, 480, 60)), "minimum mode");
         Check(!DisplayController.IsSupported(new DisplayMode(639, 480, 60)), "below-minimum mode");
 
-        var recoveryTarget = new AddedDisplay(1234, 7);
         var recoveryOwner = Guid.NewGuid();
-        Check(DisplayController.MatchesRecoveryTarget(
-                recoveryTarget, recoveryOwner, recoveryTarget, recoveryOwner),
+        Check(DisplayController.MatchesRecoveryOwner(recoveryOwner, recoveryOwner),
             "session recovery exact ownership");
-        Check(!DisplayController.MatchesRecoveryTarget(
-                recoveryTarget, recoveryOwner, new AddedDisplay(1234, 8), recoveryOwner),
-            "session recovery target mismatch");
-        Check(!DisplayController.MatchesRecoveryTarget(
-                recoveryTarget, recoveryOwner, recoveryTarget, Guid.NewGuid()),
+        Check(!DisplayController.MatchesRecoveryOwner(recoveryOwner, Guid.NewGuid()),
             "session recovery container mismatch");
+
+        var orphanedSnapshot = DisplayController.CreateFallbackRecoverySnapshot(
+            new DisplaySnapshot(
+            [
+                new DisplayState("virtual", new Point(0, 0), new DisplayMode(1920, 1080, 60), true),
+                new DisplayState("physical-a", new Point(0, 1080), new DisplayMode(1920, 1080, 60), false),
+                new DisplayState("physical-b", new Point(1920, 1080), new DisplayMode(1280, 1024, 60), false)
+            ]),
+            "virtual");
+        Check(orphanedSnapshot.Displays.SequenceEqual(
+        [
+            new DisplayState("physical-a", new Point(0, 0), new DisplayMode(1920, 1080, 60), true),
+            new DisplayState("physical-b", new Point(1920, 0), new DisplayMode(1280, 1024, 60), false)
+        ]), "orphan recovery synthesizes physical topology");
 
         var snapshot = DisplayController.Capture();
         Check(snapshot.Displays.Count > 0, "active display discovery");
@@ -216,7 +224,6 @@ internal static class SelfTest
         var start = Find<Button>(window, "_startStopButton");
         var appTitle = window.FindName("appTitle") as TextBlock;
         var appSubtitle = window.FindName("appSubtitle") as TextBlock;
-        var pocText = window.FindName("pocText") as TextBlock;
         var displaySection = window.FindName("displaySection") as Border;
         var behaviorSection = window.FindName("behaviorSection") as Border;
         var applicationSection = window.FindName("applicationSection") as Border;
@@ -248,7 +255,6 @@ internal static class SelfTest
         Check(appTitle?.Text == "Virtua Display" && appTitle.FontSize == 28,
             "modern app heading");
         Check(appSubtitle?.Text == "One focused virtual display.", "app subtitle");
-        Check(pocText?.Text == "POC", "proof-of-concept badge");
         Check(displaySection is not null && behaviorSection is not null &&
               applicationSection is not null,
             "divider-based sections");
@@ -532,27 +538,6 @@ internal static class SelfTest
             var expected = new UserSettings("Custom", 2000, 1000, 144, false, true, true, true);
             UserSettingsStore.Save(expected, path);
             Check(UserSettingsStore.Load(primary, path) == expected, "settings registry round-trip");
-
-            var recovery = new SessionRecoveryState(
-                new AddedDisplay(1234, 7),
-                new DisplayMode(1920, 1080, 120),
-                new DisplaySnapshot([
-                    new DisplayState(@"\\.\DISPLAY1", new Point(0, 0), primary, true)
-                ]));
-            SessionRecoveryStore.Save(recovery, path);
-            var loadedRecovery = SessionRecoveryStore.Load(path);
-            Check(loadedRecovery is not null &&
-                  loadedRecovery.Display == recovery.Display &&
-                  loadedRecovery.Mode == recovery.Mode &&
-                  loadedRecovery.Snapshot.Displays.SequenceEqual(recovery.Snapshot.Displays),
-                "session recovery registry round-trip");
-            using (var key = Registry.CurrentUser.CreateSubKey(path))
-                key.SetValue(SessionRecoveryStore.ValueName, "not-json", RegistryValueKind.String);
-            Check(SessionRecoveryStore.Load(path) is null,
-                "invalid session recovery rejected");
-            SessionRecoveryStore.Save(recovery, path);
-            SessionRecoveryStore.Clear(path);
-            Check(SessionRecoveryStore.Load(path) is null, "session recovery clear");
 
             using (var key = Registry.CurrentUser.CreateSubKey(path))
                 key.SetValue("SudoVDA GUI", "obsolete", RegistryValueKind.String);

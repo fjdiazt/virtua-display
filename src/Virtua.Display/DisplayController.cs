@@ -125,30 +125,61 @@ internal static class DisplayController
             $"SudoVDA target {addedDisplay.TargetId} did not become an active Windows display within {timeout.TotalSeconds:0.#} seconds.");
     }
 
-    internal static bool MatchesRecoveryTarget(
-        AddedDisplay expected,
-        Guid expectedContainerId,
-        AddedDisplay actual,
-        Guid actualContainerId) =>
-        expected == actual && expectedContainerId == actualContainerId;
+    internal static bool MatchesRecoveryOwner(Guid expectedContainerId, Guid actualContainerId) =>
+        expectedContainerId == actualContainerId;
 
     internal static bool TryGetOwnedDisplayName(
-        AddedDisplay display,
         Guid containerId,
         out string deviceName)
     {
         deviceName = string.Empty;
-        if (!TryGetDisplayPath(display, out var path) ||
-            !TryGetTargetMonitorPath(path.TargetInfo, out var monitorPath) ||
-            !TryGetMonitorContainerId(monitorPath, out var actualContainerId))
+
+        foreach (var path in GetActiveDisplayPaths())
         {
-            return false;
+            if (!TryGetTargetMonitorPath(path.TargetInfo, out var monitorPath) ||
+                !TryGetMonitorContainerId(monitorPath, out var actualContainerId) ||
+                !MatchesRecoveryOwner(containerId, actualContainerId) ||
+                !TryGetSourceName(path.SourceInfo, out deviceName))
+            {
+                continue;
+            }
+
+            return true;
         }
 
-        var actual = new AddedDisplay(path.TargetInfo.AdapterId.ToInt64(), path.TargetInfo.Id);
-        return MatchesRecoveryTarget(display, containerId, actual, actualContainerId) &&
-               TryGetSourceName(path.SourceInfo, out deviceName);
+        return false;
     }
+
+    internal static DisplaySnapshot CreateFallbackRecoverySnapshot(
+        DisplaySnapshot active,
+        string virtualDeviceName)
+    {
+        var virtualDisplay = active.Displays.Single(display =>
+            string.Equals(display.DeviceName, virtualDeviceName, StringComparison.OrdinalIgnoreCase));
+        var physicalDisplays = active.Displays.Where(display =>
+            !string.Equals(display.DeviceName, virtualDeviceName, StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (physicalDisplays.Length == 0)
+            throw new InvalidOperationException("No physical display is available for recovery.");
+
+        var primary = physicalDisplays.SingleOrDefault(display => display.Primary) ??
+                      physicalDisplays.MinBy(display => RecoveryDistance(display, virtualDisplay))!;
+        var origin = primary.Position;
+        return new DisplaySnapshot(physicalDisplays.Select(display => display with
+        {
+            Position = new Point(display.Position.X - origin.X, display.Position.Y - origin.Y),
+            Primary = string.Equals(display.DeviceName, primary.DeviceName, StringComparison.OrdinalIgnoreCase)
+        }).ToArray());
+    }
+
+    private static long RecoveryDistance(DisplayState display, DisplayState virtualDisplay)
+    {
+        var displayCenterX = display.Position.X * 2L + display.Mode.Width;
+        var virtualCenterX = virtualDisplay.Position.X * 2L + virtualDisplay.Mode.Width;
+        var expectedTop = virtualDisplay.Position.Y + virtualDisplay.Mode.Height;
+        return Math.Abs(displayCenterX - virtualCenterX) +
+               2L * Math.Abs(display.Position.Y - expectedTop);
+    }
+
     internal static Rectangle PlaceAndSetPrimary(
         string deviceName,
         DisplayMode mode,
@@ -282,6 +313,23 @@ internal static class DisplayController
         AddedDisplay display,
         out DisplayConfigPathInfo matchingPath)
     {
+        var targetLuid = Luid.FromInt64(display.AdapterLuid);
+        foreach (var path in GetActiveDisplayPaths())
+        {
+            if (path.TargetInfo.AdapterId.Equals(targetLuid) &&
+                path.TargetInfo.Id == display.TargetId)
+            {
+                matchingPath = path;
+                return true;
+            }
+        }
+
+        matchingPath = default;
+        return false;
+    }
+
+    private static DisplayConfigPathInfo[] GetActiveDisplayPaths()
+    {
         var result = GetDisplayConfigBufferSizes(
             QdcOnlyActivePaths, out var pathCount, out var modeCount);
         if (result != 0)
@@ -299,19 +347,7 @@ internal static class DisplayController
         if (result != 0)
             throw new Win32Exception(result, "Could not query active display paths.");
 
-        var targetLuid = Luid.FromInt64(display.AdapterLuid);
-        foreach (var path in paths.Take(checked((int)pathCount)))
-        {
-            if (path.TargetInfo.AdapterId.Equals(targetLuid) &&
-                path.TargetInfo.Id == display.TargetId)
-            {
-                matchingPath = path;
-                return true;
-            }
-        }
-
-        matchingPath = default;
-        return false;
+        return paths.Take(checked((int)pathCount)).ToArray();
     }
 
     private static unsafe bool TryGetSourceName(
