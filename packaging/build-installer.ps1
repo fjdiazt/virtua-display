@@ -27,6 +27,7 @@ try {
 
     dotnet publish .\src\Virtua.Display\Virtua.Display.csproj `
         -c Release -r win-x64 --self-contained true `
+        -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
         -p:PublishReadyToRun=false -p:DebugType=None -p:SatelliteResourceLanguages=en `
         -p:Version=$Version `
         -o $publish
