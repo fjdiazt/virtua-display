@@ -517,6 +517,27 @@ internal static class SelfTest
             UserSettingsStore.Save(expected, path);
             Check(UserSettingsStore.Load(primary, path) == expected, "settings registry round-trip");
 
+            var recovery = new SessionRecoveryState(
+                new AddedDisplay(1234, 7),
+                new DisplayMode(1920, 1080, 120),
+                new DisplaySnapshot([
+                    new DisplayState(@"\\.\DISPLAY1", new Point(0, 0), primary, true)
+                ]));
+            SessionRecoveryStore.Save(recovery, path);
+            var loadedRecovery = SessionRecoveryStore.Load(path);
+            Check(loadedRecovery is not null &&
+                  loadedRecovery.Display == recovery.Display &&
+                  loadedRecovery.Mode == recovery.Mode &&
+                  loadedRecovery.Snapshot.Displays.SequenceEqual(recovery.Snapshot.Displays),
+                "session recovery registry round-trip");
+            using (var key = Registry.CurrentUser.CreateSubKey(path))
+                key.SetValue(SessionRecoveryStore.ValueName, "not-json", RegistryValueKind.String);
+            Check(SessionRecoveryStore.Load(path) is null,
+                "invalid session recovery rejected");
+            SessionRecoveryStore.Save(recovery, path);
+            SessionRecoveryStore.Clear(path);
+            Check(SessionRecoveryStore.Load(path) is null, "session recovery clear");
+
             using (var key = Registry.CurrentUser.CreateSubKey(path))
                 key.SetValue("SudoVDA GUI", "obsolete", RegistryValueKind.String);
             StartupRegistration.RemoveLegacy(path);
