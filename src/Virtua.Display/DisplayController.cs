@@ -18,6 +18,15 @@ internal static class DisplayController
     private const uint CdsSetPrimary = 0x00000010;
     private const uint QdcOnlyActivePaths = 0x00000002;
     private const uint GetSourceName = 1;
+    private const uint GetTargetName = 2;
+    private const uint DigcfPresent = 0x00000002;
+    private const uint DigcfDeviceInterface = 0x00000010;
+    private const int ErrorInsufficientBuffer = 122;
+    private const int ErrorNoMoreItems = 259;
+    private const int ErrorNotFound = 1168;
+    private const uint DevpropTypeGuid = 0x0000000D;
+    private static readonly Guid MonitorInterfaceGuid = new("e6f07b5f-ee97-4a90-b076-33f57bf4eaa7");
+    private static readonly DevPropKey DeviceContainerIdKey = new(new Guid("8c7ed206-3f8a-4827-b3ab-ae9e1faefc6c"), 2);
     private const int EnumCurrentSettings = -1;
 
     internal static DisplayMode GetPrimaryMode() =>
@@ -116,6 +125,30 @@ internal static class DisplayController
             $"SudoVDA target {addedDisplay.TargetId} did not become an active Windows display within {timeout.TotalSeconds:0.#} seconds.");
     }
 
+    internal static bool MatchesRecoveryTarget(
+        AddedDisplay expected,
+        Guid expectedContainerId,
+        AddedDisplay actual,
+        Guid actualContainerId) =>
+        expected == actual && expectedContainerId == actualContainerId;
+
+    internal static bool TryGetOwnedDisplayName(
+        AddedDisplay display,
+        Guid containerId,
+        out string deviceName)
+    {
+        deviceName = string.Empty;
+        if (!TryGetDisplayPath(display, out var path) ||
+            !TryGetTargetMonitorPath(path.TargetInfo, out var monitorPath) ||
+            !TryGetMonitorContainerId(monitorPath, out var actualContainerId))
+        {
+            return false;
+        }
+
+        var actual = new AddedDisplay(path.TargetInfo.AdapterId.ToInt64(), path.TargetInfo.Id);
+        return MatchesRecoveryTarget(display, containerId, actual, actualContainerId) &&
+               TryGetSourceName(path.SourceInfo, out deviceName);
+    }
     internal static Rectangle PlaceAndSetPrimary(
         string deviceName,
         DisplayMode mode,
@@ -231,53 +264,196 @@ internal static class DisplayController
         return EnumDisplaySettingsW(deviceName, modeIndex, ref mode);
     }
 
-    private static unsafe bool TryGetDisplayName(AddedDisplay addedDisplay, out string deviceName)
+    private static bool TryGetDisplayName(AddedDisplay addedDisplay, out string deviceName)
     {
         deviceName = string.Empty;
-        if (GetDisplayConfigBufferSizes(QdcOnlyActivePaths, out var pathCount, out var modeCount) != 0)
+        try
+        {
+            return TryGetDisplayPath(addedDisplay, out var path) &&
+                   TryGetSourceName(path.SourceInfo, out deviceName);
+        }
+        catch
+        {
             return false;
+        }
+    }
+
+    private static bool TryGetDisplayPath(
+        AddedDisplay display,
+        out DisplayConfigPathInfo matchingPath)
+    {
+        var result = GetDisplayConfigBufferSizes(
+            QdcOnlyActivePaths, out var pathCount, out var modeCount);
+        if (result != 0)
+            throw new Win32Exception(result, "Could not size active display paths.");
 
         var paths = new DisplayConfigPathInfo[pathCount];
         var modes = new DisplayConfigModeInfo[modeCount];
-        if (QueryDisplayConfig(
-                QdcOnlyActivePaths,
-                ref pathCount,
-                paths,
-                ref modeCount,
-                modes,
-                IntPtr.Zero) != 0)
-        {
-            return false;
-        }
+        result = QueryDisplayConfig(
+            QdcOnlyActivePaths,
+            ref pathCount,
+            paths,
+            ref modeCount,
+            modes,
+            IntPtr.Zero);
+        if (result != 0)
+            throw new Win32Exception(result, "Could not query active display paths.");
 
-        var targetLuid = Luid.FromInt64(addedDisplay.AdapterLuid);
+        var targetLuid = Luid.FromInt64(display.AdapterLuid);
         foreach (var path in paths.Take(checked((int)pathCount)))
         {
-            if (!path.TargetInfo.AdapterId.Equals(targetLuid) ||
-                path.TargetInfo.Id != addedDisplay.TargetId)
+            if (path.TargetInfo.AdapterId.Equals(targetLuid) &&
+                path.TargetInfo.Id == display.TargetId)
             {
-                continue;
+                matchingPath = path;
+                return true;
             }
-
-            var sourceName = new DisplayConfigSourceDeviceName
-            {
-                Header = new DisplayConfigDeviceInfoHeader
-                {
-                    Type = GetSourceName,
-                    Size = (uint)Marshal.SizeOf<DisplayConfigSourceDeviceName>(),
-                    AdapterId = path.SourceInfo.AdapterId,
-                    Id = path.SourceInfo.Id
-                }
-            };
-
-            if (DisplayConfigGetDeviceInfo(ref sourceName) != 0)
-                return false;
-
-            deviceName = new string(sourceName.ViewGdiDeviceName);
-            return !string.IsNullOrWhiteSpace(deviceName);
         }
 
+        matchingPath = default;
         return false;
+    }
+
+    private static unsafe bool TryGetSourceName(
+        DisplayConfigPathSourceInfo source,
+        out string deviceName)
+    {
+        var request = new DisplayConfigSourceDeviceName
+        {
+            Header = new DisplayConfigDeviceInfoHeader
+            {
+                Type = GetSourceName,
+                Size = (uint)Marshal.SizeOf<DisplayConfigSourceDeviceName>(),
+                AdapterId = source.AdapterId,
+                Id = source.Id
+            }
+        };
+        var result = DisplayConfigGetDeviceInfo(ref request);
+        if (result != 0)
+            throw new Win32Exception(result, "Could not read display source name.");
+
+        deviceName = new string(request.ViewGdiDeviceName);
+        return !string.IsNullOrWhiteSpace(deviceName);
+    }
+
+    private static unsafe bool TryGetTargetMonitorPath(
+        DisplayConfigPathTargetInfo target,
+        out string monitorPath)
+    {
+        var request = new DisplayConfigTargetDeviceName
+        {
+            Header = new DisplayConfigDeviceInfoHeader
+            {
+                Type = GetTargetName,
+                Size = (uint)Marshal.SizeOf<DisplayConfigTargetDeviceName>(),
+                AdapterId = target.AdapterId,
+                Id = target.Id
+            }
+        };
+        var result = DisplayConfigGetDeviceInfo(ref request);
+        if (result != 0)
+            throw new Win32Exception(result, "Could not read display target name.");
+
+        monitorPath = new string(request.MonitorDevicePath);
+        return !string.IsNullOrWhiteSpace(monitorPath);
+    }
+
+    private static bool TryGetMonitorContainerId(string monitorPath, out Guid containerId)
+    {
+        containerId = default;
+        var interfaceGuid = MonitorInterfaceGuid;
+        var infoSet = SetupDiGetClassDevsW(
+            ref interfaceGuid, null, IntPtr.Zero, DigcfPresent | DigcfDeviceInterface);
+        if (infoSet == new IntPtr(-1))
+            throw new Win32Exception(Marshal.GetLastWin32Error(),
+                "Could not enumerate monitor interfaces.");
+
+        try
+        {
+            for (uint index = 0; ; index++)
+            {
+                var interfaceData = new DeviceInterfaceData
+                {
+                    Size = (uint)Marshal.SizeOf<DeviceInterfaceData>()
+                };
+                if (!SetupDiEnumDeviceInterfaces(
+                        infoSet, IntPtr.Zero, ref interfaceGuid, index, ref interfaceData))
+                {
+                    var error = Marshal.GetLastWin32Error();
+                    if (error == ErrorNoMoreItems)
+                        return false;
+                    throw new Win32Exception(error, "Could not enumerate a monitor interface.");
+                }
+
+                var deviceInfo = new DeviceInfoData
+                {
+                    Size = (uint)Marshal.SizeOf<DeviceInfoData>()
+                };
+                SetupDiGetDeviceInterfaceDetailW(
+                    infoSet,
+                    ref interfaceData,
+                    IntPtr.Zero,
+                    0,
+                    out var requiredSize,
+                    ref deviceInfo);
+                var detailError = Marshal.GetLastWin32Error();
+                if (requiredSize == 0 || detailError != ErrorInsufficientBuffer)
+                    throw new Win32Exception(detailError, "Could not size a monitor interface path.");
+
+                var detail = Marshal.AllocHGlobal(checked((int)requiredSize));
+                try
+                {
+                    Marshal.WriteInt32(detail, IntPtr.Size == 8 ? 8 : 6);
+                    deviceInfo.Size = (uint)Marshal.SizeOf<DeviceInfoData>();
+                    if (!SetupDiGetDeviceInterfaceDetailW(
+                            infoSet,
+                            ref interfaceData,
+                            detail,
+                            requiredSize,
+                            out _,
+                            ref deviceInfo))
+                    {
+                        throw new Win32Exception(Marshal.GetLastWin32Error(),
+                            "Could not read a monitor interface path.");
+                    }
+
+                    var candidatePath = Marshal.PtrToStringUni(detail + 4);
+                    if (!string.Equals(candidatePath, monitorPath, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var propertyKey = DeviceContainerIdKey;
+                    var value = new byte[16];
+                    if (!SetupDiGetDevicePropertyW(
+                            infoSet,
+                            ref deviceInfo,
+                            ref propertyKey,
+                            out var propertyType,
+                            value,
+                            (uint)value.Length,
+                            out _,
+                            0))
+                    {
+                        var error = Marshal.GetLastWin32Error();
+                        if (error == ErrorNotFound)
+                            return false;
+                        throw new Win32Exception(error, "Could not read monitor container ID.");
+                    }
+
+                    if (propertyType != DevpropTypeGuid)
+                        return false;
+                    containerId = new Guid(value);
+                    return true;
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(detail);
+                }
+            }
+        }
+        finally
+        {
+            SetupDiDestroyDeviceInfoList(infoSet);
+        }
     }
 
     private static DisplayDevice NewDisplayDevice() => new()
@@ -349,6 +525,8 @@ internal static class DisplayController
         internal readonly int HighPart;
 
         internal static Luid FromInt64(long value) => new((uint)value, (int)(value >> 32));
+
+        internal long ToInt64() => ((long)HighPart << 32) | LowPart;
 
         private Luid(uint lowPart, int highPart)
         {
@@ -428,7 +606,50 @@ internal static class DisplayController
         internal fixed char ViewGdiDeviceName[32];
     }
 
-    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private unsafe struct DisplayConfigTargetDeviceName
+    {
+        internal DisplayConfigDeviceInfoHeader Header;
+        internal uint Flags;
+        internal uint OutputTechnology;
+        internal ushort EdidManufactureId;
+        internal ushort EdidProductCodeId;
+        internal uint ConnectorInstance;
+        internal fixed char MonitorFriendlyDeviceName[64];
+        internal fixed char MonitorDevicePath[128];
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DeviceInterfaceData
+    {
+        internal uint Size;
+        internal Guid InterfaceClassGuid;
+        internal uint Flags;
+        internal UIntPtr Reserved;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DeviceInfoData
+    {
+        internal uint Size;
+        internal Guid ClassGuid;
+        internal uint DeviceInstance;
+        internal UIntPtr Reserved;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DevPropKey
+    {
+        internal Guid FormatId;
+        internal uint PropertyId;
+
+        internal DevPropKey(Guid formatId, uint propertyId)
+        {
+            FormatId = formatId;
+            PropertyId = propertyId;
+        }
+    }
+[DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool EnumDisplayDevicesW(
         string? device,
@@ -476,4 +697,49 @@ internal static class DisplayController
 
     [DllImport("user32.dll")]
     private static extern int DisplayConfigGetDeviceInfo(ref DisplayConfigSourceDeviceName requestPacket);
+
+    [DllImport("user32.dll", EntryPoint = "DisplayConfigGetDeviceInfo")]
+    private static extern int DisplayConfigGetDeviceInfo(ref DisplayConfigTargetDeviceName requestPacket);
+
+    [DllImport("setupapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern IntPtr SetupDiGetClassDevsW(
+        ref Guid classGuid,
+        string? enumerator,
+        IntPtr parent,
+        uint flags);
+
+    [DllImport("setupapi.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetupDiEnumDeviceInterfaces(
+        IntPtr deviceInfoSet,
+        IntPtr deviceInfoData,
+        ref Guid interfaceClassGuid,
+        uint memberIndex,
+        ref DeviceInterfaceData deviceInterfaceData);
+
+    [DllImport("setupapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetupDiGetDeviceInterfaceDetailW(
+        IntPtr deviceInfoSet,
+        ref DeviceInterfaceData deviceInterfaceData,
+        IntPtr deviceInterfaceDetailData,
+        uint deviceInterfaceDetailDataSize,
+        out uint requiredSize,
+        ref DeviceInfoData deviceInfoData);
+
+    [DllImport("setupapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetupDiGetDevicePropertyW(
+        IntPtr deviceInfoSet,
+        ref DeviceInfoData deviceInfoData,
+        ref DevPropKey propertyKey,
+        out uint propertyType,
+        [Out] byte[] propertyBuffer,
+        uint propertyBufferSize,
+        out uint requiredSize,
+        uint flags);
+
+    [DllImport("setupapi.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetupDiDestroyDeviceInfoList(IntPtr deviceInfoSet);
 }

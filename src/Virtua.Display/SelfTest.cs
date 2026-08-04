@@ -68,6 +68,18 @@ internal static class SelfTest
         Check(DisplayController.IsSupported(new DisplayMode(640, 480, 60)), "minimum mode");
         Check(!DisplayController.IsSupported(new DisplayMode(639, 480, 60)), "below-minimum mode");
 
+        var recoveryTarget = new AddedDisplay(1234, 7);
+        var recoveryOwner = Guid.NewGuid();
+        Check(DisplayController.MatchesRecoveryTarget(
+                recoveryTarget, recoveryOwner, recoveryTarget, recoveryOwner),
+            "session recovery exact ownership");
+        Check(!DisplayController.MatchesRecoveryTarget(
+                recoveryTarget, recoveryOwner, new AddedDisplay(1234, 8), recoveryOwner),
+            "session recovery target mismatch");
+        Check(!DisplayController.MatchesRecoveryTarget(
+                recoveryTarget, recoveryOwner, recoveryTarget, Guid.NewGuid()),
+            "session recovery container mismatch");
+
         var snapshot = DisplayController.Capture();
         Check(snapshot.Displays.Count > 0, "active display discovery");
 
