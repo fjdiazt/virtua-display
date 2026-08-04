@@ -90,7 +90,7 @@ Check(SessionRecoveryStore.Load(path) is null, "session recovery clear");
 **Files:**
 - Modify: `assets/logo.png`
 
-- [ ] Verify supplied logo is 1126 x 706, `Format32bppArgb`, SHA-256 `2F31EE1666722C3B003E11508EE88758C1A64882E49E3979A5090A5C98EEEA4`.
+- [ ] Verify supplied logo is 1126 x 706, `Format32bppArgb`, SHA-256 `2F31EE1666722C3B003E11508EE88758C1A64882E49E3979A5090A58C65A6C9B`.
 - [ ] Run Release build, self-test, `packaging\build-installer.ps1 -Version 0.1.0`, and `git diff --check`.
 - [ ] Do not run `--smoke-test`; forced-close recovery stays manual.
 - [ ] Commit only the supplied logo as `docs: update Virtua Display logo`.
