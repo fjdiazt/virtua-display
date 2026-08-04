@@ -13,8 +13,6 @@ internal sealed class SudoVdaClient : IDisposable
     internal const uint IoctlPing = 0x00222220;
     internal const uint IoctlGetProtocol = 0x002223FC;
 
-    private const byte SupportedMajor = 0;
-    private const byte RequiredMinor = 2;
     private static readonly Guid InterfaceGuid = new("e5bcc234-1e0c-418a-a0d4-ef8b7501414d");
 
     private readonly SafeFileHandle _handle;
@@ -26,17 +24,15 @@ internal sealed class SudoVdaClient : IDisposable
 
     internal static SudoVdaClient Open()
     {
-        var handle = OpenDevice();
-        var client = new SudoVdaClient(handle);
+        var client = new SudoVdaClient(OpenDevice());
 
         try
         {
             var version = client.GetProtocolVersion();
-            if (version.Major != SupportedMajor || version.Minor < RequiredMinor)
-            {
-                throw new InvalidOperationException(
-                    $"SudoVDA protocol {version.Major}.{version.Minor}.{version.Incremental} is incompatible; need {SupportedMajor}.{RequiredMinor} or newer minor version.");
-            }
+            var status = DriverStatus.FromProtocol(
+                version.Major, version.Minor, version.Incremental);
+            if (status.Kind != DriverStatusKind.Ready)
+                throw new InvalidOperationException(status.Message);
 
             return client;
         }
@@ -44,6 +40,25 @@ internal sealed class SudoVdaClient : IDisposable
         {
             client.Dispose();
             throw;
+        }
+    }
+
+    internal static DriverStatus Probe()
+    {
+        try
+        {
+            using var client = new SudoVdaClient(OpenDevice());
+            var version = client.GetProtocolVersion();
+            return DriverStatus.FromProtocol(
+                version.Major, version.Minor, version.Incremental);
+        }
+        catch (DriverNotFoundException exception)
+        {
+            return new(DriverStatusKind.Missing, exception.Message);
+        }
+        catch (Exception exception)
+        {
+            return new(DriverStatusKind.Error, exception.Message);
         }
     }
 
@@ -149,6 +164,7 @@ internal sealed class SudoVdaClient : IDisposable
 
     private static SafeFileHandle OpenDevice()
     {
+        int? openError = null;
         var interfaceGuid = InterfaceGuid;
         var deviceInfoSet = SetupDiGetClassDevsW(
             ref interfaceGuid,
@@ -220,6 +236,7 @@ internal sealed class SudoVdaClient : IDisposable
                     if (!handle.IsInvalid)
                         return handle;
 
+                    openError = Marshal.GetLastWin32Error();
                     handle.Dispose();
                 }
                 finally
@@ -233,7 +250,11 @@ internal sealed class SudoVdaClient : IDisposable
             SetupDiDestroyDeviceInfoList(deviceInfoSet);
         }
 
-        throw new InvalidOperationException("SudoVDA device interface not found. Install or repair Apollo/SudoVDA.");
+        if (openError is int openDeviceError)
+            throw new Win32Exception(openDeviceError,
+                $"Could not open SudoVDA interface (Win32 {openDeviceError}).");
+
+        throw new DriverNotFoundException();
     }
 
     private static unsafe void WriteAscii(byte* target, int capacity, string value)
@@ -249,6 +270,14 @@ internal sealed class SudoVdaClient : IDisposable
     {
         var error = Marshal.GetLastWin32Error();
         throw new Win32Exception(error, $"Could not {operation} (Win32 {error}).");
+    }
+
+    private sealed class DriverNotFoundException : InvalidOperationException
+    {
+        internal DriverNotFoundException()
+            : base("SudoVDA device interface not found. Install or repair the Virtua Display driver.")
+        {
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

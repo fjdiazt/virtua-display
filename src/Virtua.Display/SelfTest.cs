@@ -29,6 +29,8 @@ internal static class SelfTest
               ("Stop virtual display", true), "tray stop command");
         Check(MainWindow.NotificationAreaAction(false, true, true) ==
               ("Start virtual display", false), "tray command disabled while transitioning");
+        Check(MainWindow.NotificationAreaAction(false, false, true, false) ==
+              ("Start virtual display", false), "tray start disabled without driver");
         Check(new DisplayMode(1920, 1080, 60).ToString() == "1920 x 1080 @ 60 Hz", "display mode formatting");
         CheckResolutionSettings();
         CheckResolutionWindow();
@@ -43,6 +45,17 @@ internal static class SelfTest
         Check(Marshal.SizeOf<SudoVdaClient.AddParams>() == 56, "ADD layout");
         Check(Marshal.SizeOf<SudoVdaClient.AddOut>() == 12, "ADD output layout");
         Check(Marshal.SizeOf<SudoVdaClient.ProtocolVersion>() == 4, "protocol layout");
+        Check(DriverStatus.FromProtocol(0, 2, 0).Kind == DriverStatusKind.Ready,
+            "minimum driver protocol ready");
+        Check(DriverStatus.FromProtocol(0, 1, 9).Kind == DriverStatusKind.Incompatible,
+            "old driver protocol incompatible");
+        Check(DriverStatus.FromProtocol(1, 0, 0).Kind == DriverStatusKind.Incompatible,
+            "different driver major incompatible");
+        Check((int)DriverStatusKind.Ready == 0 &&
+              (int)DriverStatusKind.Missing == 2 &&
+              (int)DriverStatusKind.Incompatible == 3 &&
+              (int)DriverStatusKind.Error == 4,
+            "driver status exit codes");
 
         var modes = DisplayController.DistinctModes(
         [
@@ -322,6 +335,19 @@ internal static class SelfTest
         Check(saved?.Width == 2100, "later resolution change saves immediately");
         closeCheck!.IsChecked = false;
         window.Close();
+
+        const string missingMessage = "SudoVDA driver is missing.";
+        var missingWindow = new MainWindow(
+            primary,
+            UserSettings.Defaults(primary),
+            [primary],
+            _ => { },
+            driverStatus: new(DriverStatusKind.Missing, missingMessage));
+        Check(!Find<Button>(missingWindow, "_startStopButton").IsEnabled,
+            "missing driver disables start");
+        Check(Find<TextBlock>(missingWindow, "_statusLabel").Text == missingMessage,
+            "missing driver status shown");
+        missingWindow.Close();
     }
 
     private static void CheckAspectLockWindow()

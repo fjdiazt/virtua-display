@@ -11,6 +11,13 @@ public partial class App : Application
     {
         base.OnStartup(eventArgs);
 
+        if (eventArgs.Args.Contains("--driver-status", StringComparer.OrdinalIgnoreCase))
+        {
+            var status = SudoVdaClient.Probe();
+            Console.WriteLine($"{status.Kind}|{status.Message}");
+            Shutdown((int)status.Kind);
+            return;
+        }
         if (eventArgs.Args.Contains("--self-test", StringComparer.OrdinalIgnoreCase))
         {
             Shutdown(SelfTest.Run());

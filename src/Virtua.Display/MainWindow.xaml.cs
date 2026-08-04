@@ -15,6 +15,7 @@ public sealed partial class MainWindow : Window
     private readonly DisplayMode _primaryMode;
     private readonly Action<UserSettings> _saveSettings;
     private readonly Action<bool> _setStartWithWindows;
+    private readonly DriverStatus _driverStatus;
 
     private IReadOnlyList<ResolutionSize> _availableSizes = [];
     private ResolutionSize? _lockedAspectRatio;
@@ -31,7 +32,7 @@ public sealed partial class MainWindow : Window
     private bool _allowClose;
     private bool _exitRequested;
 
-    internal MainWindow() : this(null, null, null, null, null, null)
+    internal MainWindow() : this(null, null, null, null, null, null, null)
     {
     }
 
@@ -41,9 +42,11 @@ public sealed partial class MainWindow : Window
         IReadOnlyList<DisplayMode>? availableModes,
         Action<UserSettings>? saveSettings,
         bool? startWithWindows = null,
-        Action<bool>? setStartWithWindows = null)
+        Action<bool>? setStartWithWindows = null,
+        DriverStatus? driverStatus = null)
     {
         InitializeComponent();
+        _driverStatus = driverStatus ?? SudoVdaClient.Probe();
         _primaryMode = primaryMode ?? DisplayController.GetPrimaryMode();
         _lastValidSettings = settings ?? UserSettingsStore.Load(_primaryMode);
         _saveSettings = saveSettings ?? (value => UserSettingsStore.Save(value));
@@ -75,6 +78,8 @@ public sealed partial class MainWindow : Window
         Closed += (_, _) => _notificationAreaIcon?.Dispose();
         UpdateAspectLockButton();
         ValidateResolution(false);
+        if (_driverStatus.Kind != DriverStatusKind.Ready)
+            SetStatusError(_driverStatus.Message);
     }
 
     private void LoadResolutionControls(IReadOnlyList<DisplayMode> modes, UserSettings settings)
@@ -337,7 +342,8 @@ public sealed partial class MainWindow : Window
     }
 
     private void UpdateStartStopEnabled() =>
-        _startStopButton.IsEnabled = !_busy && (_session is not null || _modeValid);
+        _startStopButton.IsEnabled = !_busy &&
+            (_session is not null || (_driverStatus.Kind == DriverStatusKind.Ready && _modeValid));
 
     internal bool MinimizeToNotificationAreaEnabled =>
         _minimizeToNotificationAreaCheck.IsChecked == true;
@@ -392,14 +398,19 @@ public sealed partial class MainWindow : Window
     internal static (string Label, bool Enabled) NotificationAreaAction(
         bool active,
         bool transitioning,
-        bool modeValid) =>
+        bool modeValid,
+        bool driverReady = true) =>
         (
             active ? "Stop virtual display" : "Start virtual display",
-            !transitioning && (active || modeValid)
+            !transitioning && (active || (driverReady && modeValid))
         );
 
     private (string Label, bool Enabled) GetNotificationAreaAction() =>
-        NotificationAreaAction(_session is not null, _transitioning, _modeValid);
+        NotificationAreaAction(
+            _session is not null,
+            _transitioning,
+            _modeValid,
+            _driverStatus.Kind == DriverStatusKind.Ready);
 
     private async void ToggleFromNotificationArea()
     {
