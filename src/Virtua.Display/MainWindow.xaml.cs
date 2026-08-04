@@ -33,9 +33,13 @@ public sealed partial class MainWindow : Window
     private bool _closing;
     private bool _allowClose;
     private bool _exitRequested;
+    private bool _recoveryAttempted;
 
     internal MainWindow() : this(null, null, null, null, null, null, null)
     {
+        Dispatcher.BeginInvoke(
+            new Action(async () => await RecoverSessionAsync()),
+            DispatcherPriority.Loaded);
     }
 
     internal MainWindow(
@@ -440,6 +444,89 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private async Task RecoverSessionAsync()
+    {
+        if (_recoveryAttempted)
+            return;
+        _recoveryAttempted = true;
+
+        var recovery = SessionRecoveryStore.Load();
+        if (recovery is null)
+            return;
+
+        await _lifecycleGate.WaitAsync();
+        try
+        {
+            if (_session is not null)
+                return;
+
+            _transitioning = true;
+            SetUiState("Recovering...", true, false);
+            SudoVdaClient? driver = null;
+            CancellationTokenSource? watchdogCancellation = null;
+            Task watchdogTask = Task.CompletedTask;
+            WindowRouter? router = null;
+
+            try
+            {
+                driver = SudoVdaClient.Open();
+                driver.Ping();
+                if (!DisplayController.TryGetOwnedDisplayName(
+                        recovery.Display, MonitorGuid, out var deviceName))
+                {
+                    SessionRecoveryStore.Clear();
+                    driver.Dispose();
+                    driver = null;
+                    SetUiState("Stopped", false, false);
+                    return;
+                }
+
+                var watchdog = driver.GetWatchdog();
+                watchdogCancellation = new CancellationTokenSource();
+                watchdogTask = RunWatchdogAsync(
+                    driver, watchdog.Timeout, watchdogCancellation.Token);
+                var bounds = DisplayController.GetBounds(deviceName);
+                if (_routingCheck.IsChecked == true)
+                    router = WindowRouter.Start(bounds, ReportBackgroundError);
+
+                _session = new MonitorSession(
+                    MonitorGuid,
+                    driver,
+                    recovery.Snapshot,
+                    deviceName,
+                    watchdogCancellation,
+                    watchdogTask,
+                    router);
+                driver = null;
+                watchdogCancellation = null;
+                router = null;
+                SetUiState($"Active: {deviceName} — {recovery.Mode}", false, true);
+            }
+            catch (Exception exception)
+            {
+                var errors = new List<string> { exception.Message };
+                await TryCleanupAsync(async () =>
+                {
+                    if (router is not null)
+                        await router.DisposeAsync();
+                }, "stop recovered routing", errors);
+                watchdogCancellation?.Cancel();
+                await TryCleanupAsync(
+                    () => watchdogTask,
+                    "stop recovered watchdog",
+                    errors);
+                watchdogCancellation?.Dispose();
+                driver?.Dispose();
+                SetUiState($"Recovery failed: {string.Join(" | ", errors)}", false, false);
+            }
+        }
+        finally
+        {
+            _transitioning = false;
+            _lifecycleGate.Release();
+        }
+    }
+
     private async Task ToggleAsync()
     {
         if (_session is null)
@@ -482,6 +569,7 @@ public sealed partial class MainWindow : Window
                 var watchdog = driver.GetWatchdog();
                 var addedDisplay = driver.Add(mode, MonitorGuid);
                 added = true;
+                SessionRecoveryStore.Save(new SessionRecoveryState(addedDisplay, mode, snapshot));
 
                 watchdogCancellation = new CancellationTokenSource();
                 watchdogTask = RunWatchdogAsync(driver, watchdog.Timeout, watchdogCancellation.Token);
@@ -584,6 +672,15 @@ public sealed partial class MainWindow : Window
 
             if (removed)
             {
+                try
+                {
+                    SessionRecoveryStore.Clear();
+                }
+                catch (Exception exception)
+                {
+                    errors.Add($"clear recovery state: {exception.Message}");
+                }
+
                 session.WatchdogCancellation.Dispose();
                 session.Driver.Dispose();
                 _session = null;
@@ -637,6 +734,7 @@ public sealed partial class MainWindow : Window
             await TryCleanupAsync(() =>
             {
                 driver.Remove(MonitorGuid);
+                SessionRecoveryStore.Clear();
                 return Task.CompletedTask;
             }, "remove virtual display", errors);
         }

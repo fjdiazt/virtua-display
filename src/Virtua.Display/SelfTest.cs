@@ -139,6 +139,10 @@ internal static class SelfTest
                 "RelocateWindows",
                 BindingFlags.Static | BindingFlags.NonPublic) is not null,
             "stop window relocation entry point");
+        Check(typeof(MainWindow).GetMethod(
+                "RecoverSessionAsync",
+                BindingFlags.Instance | BindingFlags.NonPublic) is not null,
+            "startup session recovery entry point");
 
         using var driver = SudoVdaClient.Open();
         var protocol = driver.GetProtocolVersion();

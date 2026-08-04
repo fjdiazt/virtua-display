@@ -14,7 +14,7 @@ SudoVDA already treats `ADD` with an existing monitor GUID as idempotent and ret
 
 ### Chosen: durable recovery record plus exact Windows identity validation
 
-Persist the original topology and returned SudoVDA target immediately after `ADD`. On the next launch, resolve that active target through DisplayConfig and verify its Windows device container ID equals the app's stable monitor GUID before calling idempotent `ADD` and adopting it.
+Persist the original topology and returned SudoVDA target immediately after `ADD`. On the next launch, resolve that active target through DisplayConfig and verify its Windows device container ID equals the app's stable monitor GUID before resuming watchdog pings and adopting it.
 
 This preserves exact ownership, supports normal Stop behavior after recovery, and does not collide with Apollo monitors.
 
@@ -45,8 +45,7 @@ On application launch:
 3. Resolve the stored adapter LUID and target ID through active DisplayConfig paths.
 4. Resolve that target's monitor device and read `DEVPKEY_Device_ContainerId` through SetupAPI.
 5. Require the container ID to equal Virtua Display's stable monitor GUID.
-6. Call the existing SudoVDA `ADD` with that GUID. Because exact identity was already verified, this is an idempotent attach, not monitor creation. Require the returned target identity to equal the stored identity.
-7. Restart watchdog pings and optional new-window routing, rebuild `MonitorSession` using the persisted original topology, and show the existing Active UI state.
+6. Restart watchdog pings and optional new-window routing, rebuild `MonitorSession` using the persisted original topology, and show the existing Active UI state. Recovery never calls `ADD`, avoiding any race that could create a replacement after identity validation.
 
 If the stored target is absent or its container ID differs, delete the stale recovery record and remain stopped. If driver or Windows identity inspection fails unexpectedly, retain the record, show a recovery error, and do not create or remove a monitor.
 
