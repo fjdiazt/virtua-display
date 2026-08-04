@@ -1,11 +1,11 @@
-# SudoVDA GUI
+<p align=\
 
-A small Windows GUI for creating and managing a temporary virtual display with SudoVDA.
+A small Windows GUI for creating and managing a temporary virtual display with the SudoVDA driver.
 
 > [!IMPORTANT]
 > This project is a proof of concept. It currently requires Apollo to be installed because Apollo provides the SudoVDA driver. A future version should remove this dependency.
 
-![SudoVDA GUI](docs/images/sudovda-gui.png)
+![Virtua Display](docs/images/virtua-display.png)
 
 ## Features
 
@@ -28,7 +28,7 @@ A small Windows GUI for creating and managing a temporary virtual display with S
 
 ## Usage
 
-1. Run `SudoVDA-GUI.exe`.
+1. Run `VirtuaDisplay.exe`.
 2. Choose a resolution preset, or enter a custom width and height.
 3. Select the refresh rate.
 4. Enable **Make primary** or **Route new windows** if wanted.
@@ -54,11 +54,11 @@ The Minimize button hides the app when **Minimize to notification area** is enab
 Install the .NET 10 SDK, then run:
 
 ```powershell
-dotnet build src\SudoVDA.GUI\SudoVDA.GUI.csproj -c Release
+dotnet build src\Virtua.Display\Virtua.Display.csproj -c Release
 ```
 
 The executable is written to:
 
 ```text
-src\SudoVDA.GUI\bin\Release\net10.0-windows\SudoVDA-GUI.exe
+src\Virtua.Display\bin\Release\net10.0-windows\VirtuaDisplay.exe
 ```
