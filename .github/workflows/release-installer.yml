@@ -1,0 +1,57 @@
+name: Release installer
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Validate release version
+        id: version
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v?(\d+\.\d+\.\d+)$') {
+            throw "Release tag must be vMAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH: $env:RELEASE_TAG"
+          }
+          "value=$($Matches[1])" >> $env:GITHUB_OUTPUT
+
+      - name: Build installer
+        shell: pwsh
+        run: .\packaging\build-installer.ps1 -Version '${{ steps.version.outputs.value }}'
+
+      - name: Create checksum
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          $installer = "artifacts\VirtuaDisplay-Setup-$env:VERSION.exe"
+          $hash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $(Split-Path -Leaf $installer)" | Set-Content -NoNewline -Encoding ascii "$installer.sha256"
+
+      - name: Upload release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          $installer = "artifacts\VirtuaDisplay-Setup-$env:VERSION.exe"
+          gh release upload $env:RELEASE_TAG $installer "$installer.sha256" --clobber
