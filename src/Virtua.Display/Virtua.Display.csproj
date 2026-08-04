@@ -8,8 +8,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Platforms>x64</Platforms>
     <PlatformTarget>x64</PlatformTarget>
-    <AssemblyName>SudoVDA-GUI</AssemblyName>
-    <RootNamespace>SudoVDA.GUI</RootNamespace>
+    <AssemblyName>VirtuaDisplay</AssemblyName>
+    <RootNamespace>Virtua.Display</RootNamespace>
+    <Product>Virtua Display</Product>
+    <Description>Simple Windows virtual display controller.</Description>
     <ApplicationIcon>assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
 </Project>

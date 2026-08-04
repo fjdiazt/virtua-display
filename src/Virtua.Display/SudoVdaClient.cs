@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
-namespace SudoVDA.GUI;
+namespace Virtua.Display;
 
 internal sealed class SudoVdaClient : IDisposable
 {
@@ -75,8 +75,8 @@ internal sealed class SudoVdaClient : IDisposable
             MonitorGuid = monitorGuid
         };
 
-        WriteAscii(input.DeviceName, 14, "VRPrivacy");
-        WriteAscii(input.SerialNumber, 14, "VRP0001");
+        WriteAscii(input.DeviceName, 14, "VirtuaDisplay");
+        WriteAscii(input.SerialNumber, 14, "VD0001");
 
         if (!DeviceIoControlAdd(
                 _handle,

@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
 
-namespace SudoVDA.GUI;
+namespace Virtua.Display;
 
 internal readonly record struct WindowCandidate(
     bool Visible,

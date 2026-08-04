@@ -1,7 +1,7 @@
 using Microsoft.Win32;
 using System.IO;
 
-namespace SudoVDA.GUI;
+namespace Virtua.Display;
 
 internal static class StartupRegistration
 {

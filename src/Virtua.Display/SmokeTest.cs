@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
 
-namespace SudoVDA.GUI;
+namespace Virtua.Display;
 
 internal static class SmokeTest
 {
@@ -96,7 +96,7 @@ internal static class SmokeTest
 
     internal static Window CreateTestWindow() => new()
     {
-        Title = "SudoVDA Smoke Window",
+        Title = "Virtua Display Smoke Window",
         Width = 640,
         Height = 480,
         WindowStartupLocation = WindowStartupLocation.Manual,

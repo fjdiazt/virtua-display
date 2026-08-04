@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 
-namespace SudoVDA.GUI;
+namespace Virtua.Display;
 
 internal sealed class NotificationAreaIcon : IDisposable
 {
@@ -56,7 +56,7 @@ internal sealed class NotificationAreaIcon : IDisposable
             Flags = NifMessage | NifIcon | NifTip,
             CallbackMessage = CallbackMessage,
             IconHandle = _icon.Handle,
-            Tip = "SudoVDA",
+            Tip = "Virtua Display",
             Info = string.Empty,
             InfoTitle = string.Empty
         };
@@ -96,14 +96,14 @@ internal sealed class NotificationAreaIcon : IDisposable
     private void Add()
     {
         if (!ShellNotifyIcon(NimAdd, ref _data))
-            throw new InvalidOperationException("Could not add SudoVDA to the notification area.");
+            throw new InvalidOperationException("Could not add Virtua Display to the notification area.");
 
         _data.Version = NotifyIconVersion4;
         if (ShellNotifyIcon(NimSetVersion, ref _data))
             return;
 
         ShellNotifyIcon(NimDelete, ref _data);
-        throw new InvalidOperationException("Could not initialize the SudoVDA notification icon.");
+        throw new InvalidOperationException("Could not initialize the Virtua Display notification icon.");
     }
 
     private IntPtr WindowProcedure(
@@ -168,7 +168,7 @@ internal sealed class NotificationAreaIcon : IDisposable
         var state = getStartStopAction();
         var openItem = new MenuItem
         {
-            Header = "Open SudoVDA",
+            Header = "Open Virtua Display",
             FontWeight = FontWeights.SemiBold
         };
         var startStopItem = new MenuItem

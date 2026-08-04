@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 
-namespace SudoVDA.GUI;
+namespace Virtua.Display;
 
 public sealed partial class MainWindow : Window
 {

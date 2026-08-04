@@ -1,10 +1,10 @@
 using System.Windows;
 
-namespace SudoVDA.GUI;
+namespace Virtua.Display;
 
 public partial class App : Application
 {
-    private const string SingleInstanceName = @"Local\SudoVDA.GUI";
+    private const string SingleInstanceName = @"Local\Virtua.Display";
     private Mutex? _singleInstanceMutex;
 
     protected override void OnStartup(StartupEventArgs eventArgs)

@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Runtime.InteropServices;
 
-namespace SudoVDA.GUI;
+namespace Virtua.Display;
 
 internal static class DisplayController
 {

@@ -7,7 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 
-namespace SudoVDA.GUI;
+namespace Virtua.Display;
 
 internal static class SelfTest
 {
@@ -18,10 +18,10 @@ internal static class SelfTest
         Check(!Assembly.GetExecutingAssembly().GetReferencedAssemblies()
             .Any(reference => reference.Name == "System.Windows.Forms"),
             "no Windows Forms assembly reference");
-        Check(Assembly.GetExecutingAssembly().GetName().Name == "SudoVDA-GUI", "assembly name");
+        Check(Assembly.GetExecutingAssembly().GetName().Name == "VirtuaDisplay", "assembly name");
         CheckSingleInstance();
-        Check(StartupRegistration.BuildCommand(@"C:\Apps\SudoVDA-GUI.exe") ==
-              "\"C:\\Apps\\SudoVDA-GUI.exe\" --startup",
+        Check(StartupRegistration.BuildCommand(@"C:\Apps\VirtuaDisplay.exe") ==
+              "\"C:\\Apps\\VirtuaDisplay.exe\" --startup",
             "startup command");
         Check(MainWindow.NotificationAreaAction(false, false, true) ==
               ("Start virtual display", true), "tray start command");
@@ -134,7 +134,7 @@ internal static class SelfTest
 
     private static void CheckSingleInstance()
     {
-        var name = $@"Local\SudoVDA.GUI.Tests.{Guid.NewGuid():N}";
+        var name = $@"Local\Virtua.Display.Tests.{Guid.NewGuid():N}";
         var first = App.TryAcquireSingleInstance(name);
         var second = App.TryAcquireSingleInstance(name);
 
@@ -194,7 +194,7 @@ internal static class SelfTest
         var refreshLabel = Find<Label>(window, "refreshLabel");
         var statusIndicator = Find<TextBlock>(window, "_statusIndicator");
 
-        Check(window.Title == "SudoVDA", "main window title");
+        Check(window.Title == "Virtua Display", "main window title");
         Check(window.ResizeMode == System.Windows.ResizeMode.CanMinimize, "minimize button available");
         var trayMenu = NotificationAreaIcon.CreateMenu(
             () => { },
@@ -205,7 +205,7 @@ internal static class SelfTest
             "tray menu uses top-level WPF popup");
         Check(trayMenu.Items.Cast<object>().OfType<MenuItem>()
             .Select(item => item.Header?.ToString()).SequenceEqual(
-            ["Open SudoVDA", "Start virtual display", "Exit"]),
+            ["Open Virtua Display", "Start virtual display", "Exit"]),
             "tray menu commands");
         trayMenu.ApplyTemplate();
         Check(trayMenu.Template.FindName("DarkMenuBackground", trayMenu) is Border,
@@ -381,7 +381,7 @@ internal static class SelfTest
     private static void CheckSmokeWindow()
     {
         var window = SmokeTest.CreateTestWindow();
-        Check(window.Title == "SudoVDA Smoke Window", "WPF smoke window title");
+        Check(window.Title == "Virtua Display Smoke Window", "WPF smoke window title");
         Check(window.Width == 640 && window.Height == 480, "WPF smoke window dimensions");
         Check(Marshal.SizeOf<SmokeTest.MonitorInfoEx>() == 104, "monitor info layout");
         window.Close();
@@ -459,8 +459,8 @@ internal static class SelfTest
             UserSettingsStore.Save(expected, path);
             Check(UserSettingsStore.Load(primary, path) == expected, "settings registry round-trip");
 
-            const string fakeExecutable = @"C:\Apps\SudoVDA-GUI.exe";
-            const string startupValue = "SudoVDA GUI Test";
+            const string fakeExecutable = @"C:\Apps\VirtuaDisplay.exe";
+            const string startupValue = "Virtua Display Test";
             Check(!StartupRegistration.IsEnabled(fakeExecutable, path, startupValue),
                 "startup registration default");
             StartupRegistration.SetEnabled(true, fakeExecutable, path, startupValue);
