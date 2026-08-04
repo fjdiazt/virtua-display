@@ -101,6 +101,30 @@ begin
   Log(Format('Driver probe: %d, %s', [ResultCode, Message]));
 end;
 
+function FindSudoVdaDevice(var Message: String): Integer;
+var
+  Output: TExecOutput;
+  ResultCode: Integer;
+begin
+  if not ExecAndCaptureOutput(
+      TempFile('nefconc.exe'),
+      '--find-hwid --hardware-id "root\sudomaker\sudovda"',
+      ExpandConstant('{tmp}'), SW_SHOWNORMAL, ewWaitUntilTerminated,
+      ResultCode, Output) then
+  begin
+    Result := DriverError;
+    Message := 'Could not check for an existing SudoVDA device.';
+    exit;
+  end;
+
+  Result := ResultCode;
+  if ResultCode = 0 then
+    Message := 'An existing SudoVDA device was found but could not be opened. Restart Windows or repair it before installing Virtua Display.'
+  else if ResultCode <> 1168 then
+    Message := FirstOutputLine(Output,
+      Format('Existing SudoVDA device check failed (exit code %d).', [ResultCode]));
+  Log(Format('Device-node probe exit code: %d', [ResultCode]));
+end;
 function VerifyFile(const Name, ExpectedHash: String): Boolean;
 begin
   Result := CompareText(GetSHA256OfFile(TempFile(Name)), ExpectedHash) = 0;
@@ -182,10 +206,22 @@ begin
     exit;
   end;
 
+  Status := FindSudoVdaDevice(Message);
+  if Status = 0 then
+  begin
+    Result := Message;
+    exit;
+  end;
+  if Status <> 1168 then
+  begin
+    Result := Message;
+    exit;
+  end;
   if not RunCommand(ExpandConstant('{sys}\certutil.exe'),
       '-addstore -f root ' + AddQuotes(TempFile('sudovda.cer')),
       'SudoVDA root certificate installation', NeedsRestart, Result) then
     exit;
+
   if not RunCommand(ExpandConstant('{sys}\certutil.exe'),
       '-addstore -f TrustedPublisher ' + AddQuotes(TempFile('sudovda.cer')),
       'SudoVDA publisher certificate installation', NeedsRestart, Result) then
