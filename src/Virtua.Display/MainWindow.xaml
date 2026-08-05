@@ -21,22 +21,44 @@
                 Background="{DynamicResource HeaderBackgroundBrush}"
                 BorderBrush="{DynamicResource DividerBrush}"
                 BorderThickness="0,0,0,1">
-            <StackPanel>
-                <TextBlock x:Name="appTitle"
-                           Text="Virtua Display"
-                           FontSize="28"
-                           FontWeight="Bold" />
-                <TextBlock x:Name="appSubtitle"
-                           Margin="0,5,0,0"
-                           Text="One focused virtual display."
-                           Foreground="{DynamicResource MutedForegroundBrush}"
-                           FontSize="14" />
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock x:Name="appTitle"
+                               Text="Virtua Display"
+                               FontSize="28"
+                               FontWeight="Bold" />
+                    <TextBlock x:Name="appSubtitle"
+                               Margin="0,5,0,0"
+                               Text="One focused virtual display."
+                               Foreground="{DynamicResource MutedForegroundBrush}"
+                               FontSize="14" />
+                </StackPanel>
+                <Button x:Name="_settingsButton"
+                        Grid.Column="1"
+                        Padding="14,8"
+                        VerticalAlignment="Center"
+                        Background="{DynamicResource ControlBackgroundBrush}"
+                        BorderBrush="{DynamicResource ControlBorderBrush}"
+                        automation:AutomationProperties.AutomationId="settingsButton"
+                        automation:AutomationProperties.Name="Open settings"
+                        TabIndex="9">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE713;"
+                                   Margin="0,0,8,0"
+                                   FontFamily="Segoe Fluent Icons"
+                                   FontSize="14" />
+                        <TextBlock Text="Settings" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </Grid>
         </Border>
 
         <Grid Grid.Row="1" Margin="28,20,28,24">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -177,52 +199,8 @@
                 </Grid>
             </Border>
 
-            <Border x:Name="applicationSection"
-                    Grid.Row="2"
-                    Padding="0,18"
-                    BorderBrush="{DynamicResource DividerBrush}"
-                    BorderThickness="0,0,0,1">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <TextBlock Text="APPLICATION" Style="{StaticResource SectionTitleStyle}" />
-                    <Grid Grid.Row="1" Margin="0,13,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <CheckBox x:Name="_startWithWindowsCheck"
-                                  Grid.Row="0"
-                                  Grid.Column="0"
-                                  Content="Start with Windows"
-                                  Margin="0,0,12,0"
-                                  automation:AutomationProperties.AutomationId="startWithWindowsCheck"
-                                  TabIndex="8" />
-                        <CheckBox x:Name="_minimizeToNotificationAreaCheck"
-                                  Grid.Row="0"
-                                  Grid.Column="1"
-                                  Content="Minimize to notification area"
-                                  Margin="12,0,0,0"
-                                  automation:AutomationProperties.AutomationId="minimizeToNotificationAreaCheck"
-                                  TabIndex="9" />
-                        <CheckBox x:Name="_closeToNotificationAreaCheck"
-                                  Grid.Row="1"
-                                  Grid.Column="1"
-                                  Content="Close to notification area"
-                                  Margin="12,9,0,0"
-                                  automation:AutomationProperties.AutomationId="closeToNotificationAreaCheck"
-                                  TabIndex="10" />
-                    </Grid>
-                </Grid>
-            </Border>
 
-            <Grid x:Name="footerLayout" Grid.Row="3" Margin="0,20,0,0">
+            <Grid x:Name="footerLayout" Grid.Row="2" Margin="0,20,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -265,7 +243,7 @@
                         Content="Start"
                         IsDefault="True"
                         automation:AutomationProperties.AutomationId="startStopButton"
-                        TabIndex="11" />
+                        TabIndex="8" />
             </Grid>
         </Grid>
     </Grid>

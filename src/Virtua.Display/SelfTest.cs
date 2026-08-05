@@ -218,15 +218,12 @@ internal static class SelfTest
         var refresh = Find<ComboBox>(window, "_refreshCombo");
         var primaryCheck = Find<CheckBox>(window, "_primaryCheck");
         var routingCheck = Find<CheckBox>(window, "_routingCheck");
-        var startWithWindowsCheck = window.FindName("_startWithWindowsCheck") as CheckBox;
-        var minimizeCheck = window.FindName("_minimizeToNotificationAreaCheck") as CheckBox;
-        var closeCheck = window.FindName("_closeToNotificationAreaCheck") as CheckBox;
+        var settingsButton = Find<Button>(window, "_settingsButton");
         var start = Find<Button>(window, "_startStopButton");
         var appTitle = window.FindName("appTitle") as TextBlock;
         var appSubtitle = window.FindName("appSubtitle") as TextBlock;
         var displaySection = window.FindName("displaySection") as Border;
         var behaviorSection = window.FindName("behaviorSection") as Border;
-        var applicationSection = window.FindName("applicationSection") as Border;
         var resolutionLayout = Find<Grid>(window, "resolutionLayout");
         var widthLabel = Find<Label>(window, "widthLabel");
         var heightLabel = Find<Label>(window, "heightLabel");
@@ -255,9 +252,13 @@ internal static class SelfTest
         Check(appTitle?.Text == "Virtua Display" && appTitle.FontSize == 28,
             "modern app heading");
         Check(appSubtitle?.Text == "One focused virtual display.", "app subtitle");
-        Check(displaySection is not null && behaviorSection is not null &&
-              applicationSection is not null,
+        Check(displaySection is not null && behaviorSection is not null,
             "divider-based sections");
+        Check(window.FindName("applicationSection") is null &&
+              window.FindName("_startWithWindowsCheck") is null &&
+              window.FindName("_minimizeToNotificationAreaCheck") is null &&
+              window.FindName("_closeToNotificationAreaCheck") is null,
+            "application settings removed from main window");
         Check(window.FindName("displayGroup") is null &&
               window.FindName("behaviorGroup") is null &&
               window.FindName("applicationBehaviorGroup") is null,
@@ -275,6 +276,15 @@ internal static class SelfTest
             "modern primary button chrome");
         Check(primaryCheck.Template.FindName("CheckBorder", primaryCheck) is Border,
             "modern check box chrome");
+        Check(settingsButton.Content is StackPanel settingsContent &&
+              settingsContent.Children.OfType<TextBlock>().First().Text == "\uE713" &&
+              settingsContent.Children.OfType<TextBlock>().Last().Text == "Settings" &&
+              AutomationProperties.GetName(settingsButton) == "Open settings",
+            "settings gear button");
+        var settingsRequested = 0;
+        window.SettingsRequested += () => settingsRequested++;
+        settingsButton.RaiseEvent(new System.Windows.RoutedEventArgs(Button.ClickEvent));
+        Check(settingsRequested == 1, "settings request event");
         Check(aspect.SelectedItem?.ToString() == "All aspect ratios", "all-aspects default");
         Check(preset.SelectedItem?.ToString() == "Match primary display", "match-primary default");
         Check(width.Text == "3440" && height.Text == "1440", "copy-primary dimensions");
@@ -307,19 +317,41 @@ internal static class SelfTest
             "all-aspects preserves selected preset");
         Check(primaryCheck.IsChecked == true, "make-primary default");
         Check(routingCheck.IsChecked == true, "routing default");
-        Check(startWithWindowsCheck?.Content?.ToString() == "Start with Windows",
-            "start-with-Windows option");
-        Check(startWithWindowsCheck?.IsChecked == false, "start-with-Windows default");
-        Check(minimizeCheck?.Content?.ToString() == "Minimize to notification area",
-            "notification-area option");
-        Check(closeCheck?.Content?.ToString() == "Close to notification area",
-            "close-to-notification-area option");
-        Check(closeCheck?.IsChecked == false, "close-to-notification-area default");
+
+        var settingsWindow = new SettingsWindow(window);
+        Check(settingsWindow.SizeToContent == System.Windows.SizeToContent.Height,
+            "settings window auto height");
+        var startWithWindowsSwitch = Find<ToggleButton>(settingsWindow, "_startWithWindowsSwitch");
+        var minimizeSwitch = Find<ToggleButton>(settingsWindow, "_minimizeToNotificationAreaSwitch");
+        var keepRunningSwitch = Find<ToggleButton>(settingsWindow, "_keepRunningWhenClosedSwitch");
+        Check(Find<TextBlock>(settingsWindow, "startWithWindowsLabel").Text ==
+              "Start Virtua Display with Windows" &&
+              Find<TextBlock>(settingsWindow, "startWithWindowsDescription").Text ==
+              "Launch for your account when you sign in.",
+            "start-with-Windows wording");
+        Check(Find<TextBlock>(settingsWindow, "minimizeLabel").Text ==
+              "Minimize to notification area" &&
+              Find<TextBlock>(settingsWindow, "minimizeDescription").Text ==
+              "Hide the window when minimized.",
+            "minimize wording");
+        Check(Find<TextBlock>(settingsWindow, "keepRunningLabel").Text ==
+              "Keep running when closed" &&
+              Find<TextBlock>(settingsWindow, "keepRunningDescription").Text ==
+              "The close button hides Virtua Display in the notification area.",
+            "close wording");
+        Check(Find<TextBlock>(settingsWindow, "settingsSaveNotice").Text ==
+              "Settings save immediately", "settings save notice");
+        Check(startWithWindowsSwitch.IsChecked == false &&
+              minimizeSwitch.IsChecked == false && keepRunningSwitch.IsChecked == false,
+            "application settings defaults");
+        startWithWindowsSwitch.ApplyTemplate();
+        Check(startWithWindowsSwitch.Template.FindName("SwitchTrack", startWithWindowsSwitch) is Border,
+            "modern settings switch chrome");
+
         Check(start.Content?.ToString() == "Start", "start button default");
         Check(displaySection?.BorderThickness.Bottom == 1, "display section divider");
         Check(behaviorSection?.BorderThickness.Bottom == 1, "behavior section divider");
-        Check(applicationSection?.BorderThickness.Bottom == 1,
-            "application section divider");
+
         Check(Grid.GetColumn(width) == 0 && Grid.GetRow(width) == 5 &&
               Grid.GetColumn(height) == 1 && Grid.GetRow(height) == 5 &&
               Grid.GetColumn(refresh) == 3 && Grid.GetRow(refresh) == 5,
@@ -365,11 +397,12 @@ internal static class SelfTest
 
         primaryCheck.IsChecked = false;
         routingCheck.IsChecked = false;
-        startWithWindowsCheck!.IsChecked = true;
-        if (minimizeCheck is not null)
-            minimizeCheck.IsChecked = true;
-        if (closeCheck is not null)
-            closeCheck.IsChecked = true;
+        startWithWindowsSwitch.IsChecked = true;
+        startWithWindowsSwitch.RaiseEvent(new System.Windows.RoutedEventArgs(Button.ClickEvent));
+        minimizeSwitch.IsChecked = true;
+        minimizeSwitch.RaiseEvent(new System.Windows.RoutedEventArgs(Button.ClickEvent));
+        keepRunningSwitch.IsChecked = true;
+        keepRunningSwitch.RaiseEvent(new System.Windows.RoutedEventArgs(Button.ClickEvent));
         Check(startWithWindowsSaved == true, "start-with-Windows registration");
         Check(saved == new UserSettings("Custom", 2000, 1080, 119, false, false, true, true),
             "window settings persistence");
@@ -379,8 +412,33 @@ internal static class SelfTest
         Check(saved?.CloseToNotificationArea == true,
             "close-to-notification-area preference persistence");
         Check(saved?.Width == 2100, "later resolution change saves immediately");
-        closeCheck!.IsChecked = false;
+        window.SetCloseToNotificationArea(false);
+        settingsWindow.Close();
         window.Close();
+
+        var failingWindow = new MainWindow(
+            primary,
+            UserSettings.Defaults(primary),
+            [primary],
+            _ => throw new InvalidOperationException("save failed"),
+            false,
+            _ => throw new InvalidOperationException("startup failed"),
+            new DriverStatus(DriverStatusKind.Ready, "Ready"));
+        var failingSettings = new SettingsWindow(failingWindow);
+        var failingMinimize = Find<ToggleButton>(failingSettings, "_minimizeToNotificationAreaSwitch");
+        failingMinimize.IsChecked = true;
+        failingMinimize.RaiseEvent(new System.Windows.RoutedEventArgs(Button.ClickEvent));
+        Check(failingMinimize.IsChecked == false &&
+              Find<TextBlock>(failingSettings, "settingsStatusText").Text == "save failed",
+            "settings save failure rolls back");
+        var failingStartup = Find<ToggleButton>(failingSettings, "_startWithWindowsSwitch");
+        failingStartup.IsChecked = true;
+        failingStartup.RaiseEvent(new System.Windows.RoutedEventArgs(Button.ClickEvent));
+        Check(failingStartup.IsChecked == false &&
+              Find<TextBlock>(failingSettings, "settingsStatusText").Text == "startup failed",
+            "startup failure rolls back");
+        failingSettings.Close();
+        failingWindow.Close();
 
         const string missingMessage = "SudoVDA driver is missing.";
         var missingWindow = new MainWindow(
@@ -465,7 +523,7 @@ internal static class SelfTest
         window.Close();
     }
 
-    private static T Find<T>(MainWindow window, string name) where T : class =>
+    private static T Find<T>(System.Windows.FrameworkElement window, string name) where T : class =>
         window.FindName(name) as T ??
         throw new InvalidOperationException($"Missing WPF element: {name}.");
 

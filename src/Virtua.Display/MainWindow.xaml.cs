@@ -25,7 +25,7 @@ public sealed partial class MainWindow : Window
     private bool _suppressResolutionEvents;
     private bool _modeValid;
     private bool _busy;
-    private bool _suppressStartupEvents;
+    private bool _startWithWindowsEnabled;
     private NotificationAreaIcon? _notificationAreaIcon;
 
     private MonitorSession? _session;
@@ -34,6 +34,8 @@ public sealed partial class MainWindow : Window
     private bool _allowClose;
     private bool _exitRequested;
     private bool _recoveryAttempted;
+
+    internal event Action? SettingsRequested;
 
     internal MainWindow() : this(null, null, null, null, null, null, null)
     {
@@ -59,9 +61,9 @@ public sealed partial class MainWindow : Window
         _saveSettings = saveSettings ?? (value => UserSettingsStore.Save(value));
         _setStartWithWindows = setStartWithWindows ??
             (value => StartupRegistration.SetEnabled(value));
+        _startWithWindowsEnabled = startWithWindows ?? StartupRegistration.IsEnabled();
 
         LoadResolutionControls(availableModes ?? DisplayController.GetModeChoices(), _lastValidSettings);
-        _startWithWindowsCheck.IsChecked = startWithWindows ?? StartupRegistration.IsEnabled();
         _aspectCombo.SelectionChanged += (_, _) => OnAspectChanged();
         _presetCombo.SelectionChanged += (_, _) => OnPresetChanged();
         _widthText.TextChanged += (_, _) => OnDimensionChanged(true);
@@ -73,12 +75,7 @@ public sealed partial class MainWindow : Window
         _primaryCheck.Unchecked += (_, _) => UpdatePersistedChecks();
         _routingCheck.Checked += (_, _) => UpdatePersistedChecks();
         _routingCheck.Unchecked += (_, _) => UpdatePersistedChecks();
-        _minimizeToNotificationAreaCheck.Checked += (_, _) => UpdatePersistedChecks();
-        _minimizeToNotificationAreaCheck.Unchecked += (_, _) => UpdatePersistedChecks();
-        _closeToNotificationAreaCheck.Checked += (_, _) => UpdatePersistedChecks();
-        _closeToNotificationAreaCheck.Unchecked += (_, _) => UpdatePersistedChecks();
-        _startWithWindowsCheck.Checked += (_, _) => OnStartWithWindowsChanged();
-        _startWithWindowsCheck.Unchecked += (_, _) => OnStartWithWindowsChanged();
+        _settingsButton.Click += (_, _) => SettingsRequested?.Invoke();
         _startStopButton.Click += async (_, _) => await ToggleAsync();
         StateChanged += (_, _) => OnWindowStateChanged();
         Closing += OnWindowClosing;
@@ -113,8 +110,6 @@ public sealed partial class MainWindow : Window
         SetModeText(initialMode, true);
         _primaryCheck.IsChecked = settings.MakePrimary;
         _routingCheck.IsChecked = settings.RouteNewWindows;
-        _closeToNotificationAreaCheck.IsChecked = settings.CloseToNotificationArea;
-        _minimizeToNotificationAreaCheck.IsChecked = settings.MinimizeToNotificationArea;
         _suppressResolutionEvents = false;
     }
 
@@ -316,8 +311,8 @@ public sealed partial class MainWindow : Window
                 mode.RefreshHz,
                 _primaryCheck.IsChecked == true,
                 _routingCheck.IsChecked == true,
-                _minimizeToNotificationAreaCheck.IsChecked == true,
-                _closeToNotificationAreaCheck.IsChecked == true);
+                _lastValidSettings.MinimizeToNotificationArea,
+                _lastValidSettings.CloseToNotificationArea);
             if (persist)
                 PersistSettings();
         }
@@ -329,9 +324,7 @@ public sealed partial class MainWindow : Window
         _lastValidSettings = _lastValidSettings with
         {
             MakePrimary = _primaryCheck.IsChecked == true,
-            RouteNewWindows = _routingCheck.IsChecked == true,
-            MinimizeToNotificationArea = _minimizeToNotificationAreaCheck.IsChecked == true,
-            CloseToNotificationArea = _closeToNotificationAreaCheck.IsChecked == true
+            RouteNewWindows = _routingCheck.IsChecked == true
         };
         PersistSettings();
     }
@@ -352,10 +345,29 @@ public sealed partial class MainWindow : Window
         _startStopButton.IsEnabled = !_busy &&
             (_session is not null || (_driverStatus.Kind == DriverStatusKind.Ready && _modeValid));
 
+    internal bool StartWithWindowsEnabled => _startWithWindowsEnabled;
     internal bool MinimizeToNotificationAreaEnabled =>
-        _minimizeToNotificationAreaCheck.IsChecked == true;
+        _lastValidSettings.MinimizeToNotificationArea;
     internal bool CloseToNotificationAreaEnabled =>
-        _closeToNotificationAreaCheck.IsChecked == true;
+        _lastValidSettings.CloseToNotificationArea;
+
+    internal void SetStartWithWindows(bool enabled)
+    {
+        _setStartWithWindows(enabled);
+        _startWithWindowsEnabled = enabled;
+    }
+
+    internal void SetMinimizeToNotificationArea(bool enabled) =>
+        SaveApplicationSettings(_lastValidSettings with { MinimizeToNotificationArea = enabled });
+
+    internal void SetCloseToNotificationArea(bool enabled) =>
+        SaveApplicationSettings(_lastValidSettings with { CloseToNotificationArea = enabled });
+
+    private void SaveApplicationSettings(UserSettings settings)
+    {
+        _saveSettings(settings);
+        _lastValidSettings = settings;
+    }
 
     internal void HideToNotificationArea()
     {
@@ -425,24 +437,6 @@ public sealed partial class MainWindow : Window
             await ToggleAsync();
     }
 
-    private void OnStartWithWindowsChanged()
-    {
-        if (_suppressStartupEvents)
-            return;
-
-        var enabled = _startWithWindowsCheck.IsChecked == true;
-        try
-        {
-            _setStartWithWindows(enabled);
-        }
-        catch (Exception exception)
-        {
-            _suppressStartupEvents = true;
-            _startWithWindowsCheck.IsChecked = !enabled;
-            _suppressStartupEvents = false;
-            SetStatusError($"Could not update Windows startup: {exception.Message}");
-        }
-    }
 
     private async Task RecoverSessionAsync()
     {

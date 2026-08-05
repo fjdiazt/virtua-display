@@ -1,0 +1,183 @@
+<Window x:Class="Virtua.Display.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:automation="clr-namespace:System.Windows.Automation;assembly=PresentationCore"
+        Title="Virtua Display settings"
+        Width="560"
+        MinWidth="500"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        Foreground="{DynamicResource ForegroundBrush}"
+        FontFamily="Segoe UI Variable Text">
+    <Window.Resources>
+        <Style x:Key="SwitchStyle" TargetType="ToggleButton">
+            <Setter Property="Width" Value="46" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="SwitchTrack"
+                                Background="{DynamicResource ControlBackgroundBrush}"
+                                BorderBrush="{DynamicResource ControlBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="13">
+                            <Ellipse x:Name="SwitchThumb"
+                                     Width="18"
+                                     Height="18"
+                                     Margin="3"
+                                     HorizontalAlignment="Left"
+                                     Fill="{DynamicResource ForegroundBrush}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="SwitchTrack" Property="Background" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="SwitchTrack" Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+                                <Setter TargetName="SwitchThumb" Property="HorizontalAlignment" Value="Right" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="SwitchTrack" Property="Opacity" Value="0.9" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="SwitchTrack" Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+                                <Setter TargetName="SwitchTrack" Property="BorderThickness" Value="2" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Padding="28,22,28,20"
+                Background="{DynamicResource HeaderBackgroundBrush}"
+                BorderBrush="{DynamicResource DividerBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel>
+                <TextBlock Text="Settings" FontSize="28" FontWeight="Bold" />
+                <TextBlock Margin="0,5,0,0"
+                           Text="Global Virtua Display behavior."
+                           Foreground="{DynamicResource MutedForegroundBrush}"
+                           FontSize="14" />
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Padding="28,22">
+            <StackPanel>
+                <TextBlock Text="STARTUP &amp; BACKGROUND" Style="{StaticResource SectionTitleStyle}" />
+                <Border Margin="0,10,0,0"
+                        Padding="20,4"
+                        Background="{DynamicResource PanelBackgroundBrush}"
+                        BorderBrush="{DynamicResource DividerBrush}"
+                        BorderThickness="1"
+                        CornerRadius="14">
+                    <StackPanel>
+                        <Grid Margin="0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,20,0">
+                                <TextBlock x:Name="startWithWindowsLabel"
+                                           Text="Start Virtua Display with Windows"
+                                           FontSize="14"
+                                           FontWeight="SemiBold" />
+                                <TextBlock x:Name="startWithWindowsDescription"
+                                           Margin="0,4,0,0"
+                                           Text="Launch for your account when you sign in."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource MutedForegroundBrush}"
+                                           FontSize="12" />
+                            </StackPanel>
+                            <ToggleButton x:Name="_startWithWindowsSwitch"
+                                          Grid.Column="1"
+                                          Style="{StaticResource SwitchStyle}"
+                                          Click="StartWithWindows_Click"
+                                          automation:AutomationProperties.Name="Start Virtua Display with Windows" />
+                        </Grid>
+
+                        <Border Height="1" Background="{DynamicResource DividerBrush}" />
+
+                        <Grid Margin="0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,20,0">
+                                <TextBlock x:Name="minimizeLabel"
+                                           Text="Minimize to notification area"
+                                           FontSize="14"
+                                           FontWeight="SemiBold" />
+                                <TextBlock x:Name="minimizeDescription"
+                                           Margin="0,4,0,0"
+                                           Text="Hide the window when minimized."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource MutedForegroundBrush}"
+                                           FontSize="12" />
+                            </StackPanel>
+                            <ToggleButton x:Name="_minimizeToNotificationAreaSwitch"
+                                          Grid.Column="1"
+                                          Style="{StaticResource SwitchStyle}"
+                                          Click="MinimizeToNotificationArea_Click"
+                                          automation:AutomationProperties.Name="Minimize to notification area" />
+                        </Grid>
+
+                        <Border Height="1" Background="{DynamicResource DividerBrush}" />
+
+                        <Grid Margin="0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,20,0">
+                                <TextBlock x:Name="keepRunningLabel"
+                                           Text="Keep running when closed"
+                                           FontSize="14"
+                                           FontWeight="SemiBold" />
+                                <TextBlock x:Name="keepRunningDescription"
+                                           Margin="0,4,0,0"
+                                           Text="The close button hides Virtua Display in the notification area."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource MutedForegroundBrush}"
+                                           FontSize="12" />
+                            </StackPanel>
+                            <ToggleButton x:Name="_keepRunningWhenClosedSwitch"
+                                          Grid.Column="1"
+                                          Style="{StaticResource SwitchStyle}"
+                                          Click="KeepRunningWhenClosed_Click"
+                                          automation:AutomationProperties.Name="Keep Virtua Display running when closed" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="2"
+                Padding="28,13"
+                Background="{DynamicResource HeaderBackgroundBrush}"
+                BorderBrush="{DynamicResource DividerBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid>
+                <TextBlock x:Name="settingsSaveNotice"
+                           Text="Settings save immediately"
+                           Foreground="{DynamicResource MutedForegroundBrush}"
+                           FontSize="11" />
+                <TextBlock x:Name="settingsStatusText"
+                           MaxWidth="300"
+                           HorizontalAlignment="Right"
+                           Foreground="{DynamicResource ActiveBrush}"
+                           TextTrimming="CharacterEllipsis"
+                           FontSize="11" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -6,6 +6,8 @@ public partial class App : Application
 {
     private const string SingleInstanceName = @"Local\Virtua.Display";
     private Mutex? _singleInstanceMutex;
+    private MainWindow? _mainWindow;
+    private SettingsWindow? _settingsWindow;
 
     protected override void OnStartup(StartupEventArgs eventArgs)
     {
@@ -45,15 +47,18 @@ public partial class App : Application
             return;
         }
 
-        var window = new MainWindow();
+        _mainWindow = new MainWindow();
+        _mainWindow.SettingsRequested += ShowSettings;
         ShowWindow(
-            window,
+            _mainWindow,
             eventArgs.Args.Contains("--startup", StringComparer.OrdinalIgnoreCase) &&
-            window.MinimizeToNotificationAreaEnabled);
+            _mainWindow.MinimizeToNotificationAreaEnabled);
     }
 
     protected override void OnExit(ExitEventArgs eventArgs)
     {
+        _settingsWindow?.Close();
+        _settingsWindow = null;
         if (_singleInstanceMutex is not null)
         {
             _singleInstanceMutex.ReleaseMutex();
@@ -61,6 +66,27 @@ public partial class App : Application
         }
 
         base.OnExit(eventArgs);
+    }
+
+    private void ShowSettings()
+    {
+        if (_settingsWindow is not null)
+        {
+            _settingsWindow.Show();
+            _settingsWindow.WindowState = WindowState.Normal;
+            _settingsWindow.Activate();
+            return;
+        }
+
+        _settingsWindow = new SettingsWindow(_mainWindow!)
+        {
+            Owner = _mainWindow?.IsVisible == true ? _mainWindow : null,
+            WindowStartupLocation = _mainWindow?.IsVisible == true
+                ? WindowStartupLocation.CenterOwner
+                : WindowStartupLocation.CenterScreen
+        };
+        _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        _settingsWindow.Show();
     }
 
     internal static Mutex? TryAcquireSingleInstance(string name)
@@ -76,7 +102,11 @@ public partial class App : Application
     private void ShowWindow(Window window, bool hidden = false)
     {
         MainWindow = window;
-        window.Closed += (_, _) => Shutdown();
+        window.Closed += (_, _) =>
+        {
+            _settingsWindow?.Close();
+            Shutdown();
+        };
         if (hidden && window is MainWindow mainWindow)
             mainWindow.HideToNotificationArea();
         else
