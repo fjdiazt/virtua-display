@@ -35,6 +35,8 @@ Tray-setting mutations update `_lastValidSettings` and call the existing setting
 
 `App` creates the Settings window on demand. When the main window is visible, Settings is owned and centered over it; otherwise it centers on screen. Closing Settings only closes that dialog. Closing or exiting the application closes Settings before shutdown.
 
+The window keeps a fixed width and uses WPF `SizeToContent="Height"`. No fixed or minimum height is applied, so every option fits when opened without requiring resizing or a scrollbar.
+
 ## Verification
 
 - Extend self-tests for exact visible wording, gear accessibility name, singleton request seam, immediate persistence, failure rollback, and retained defaults.
