@@ -240,7 +240,7 @@
             </Setter>
         </Style>
 
-        <Style TargetType="{x:Type ToggleButton}">
+        <Style x:Key="AspectLockButtonStyle" TargetType="{x:Type ToggleButton}">
             <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}" />
             <Setter Property="Foreground" Value="{StaticResource MutedForegroundBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource ControlBorderBrush}" />

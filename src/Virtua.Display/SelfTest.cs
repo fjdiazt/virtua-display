@@ -324,6 +324,14 @@ internal static class SelfTest
         var startWithWindowsSwitch = Find<ToggleButton>(settingsWindow, "_startWithWindowsSwitch");
         var minimizeSwitch = Find<ToggleButton>(settingsWindow, "_minimizeToNotificationAreaSwitch");
         var keepRunningSwitch = Find<ToggleButton>(settingsWindow, "_keepRunningWhenClosedSwitch");
+        foreach (var comboBox in new[] { aspect, preset, refresh })
+        {
+            comboBox.ApplyTemplate();
+            comboBox.Measure(new System.Windows.Size(480, 38));
+            comboBox.Arrange(new System.Windows.Rect(0, 0, 480, 38));
+            Check(FindVisualChild<ToggleButton>(comboBox)?.ActualWidth == comboBox.ActualWidth,
+                $"Dropdown click target fills control: {AutomationProperties.GetAutomationId(comboBox)}");
+        }
         Check(Find<TextBlock>(settingsWindow, "startWithWindowsLabel").Text ==
               "Start Virtua Display with Windows" &&
               Find<TextBlock>(settingsWindow, "startWithWindowsDescription").Text ==
@@ -526,6 +534,21 @@ internal static class SelfTest
     private static T Find<T>(System.Windows.FrameworkElement window, string name) where T : class =>
         window.FindName(name) as T ??
         throw new InvalidOperationException($"Missing WPF element: {name}.");
+
+    private static T? FindVisualChild<T>(System.Windows.DependencyObject parent)
+        where T : System.Windows.DependencyObject
+    {
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, index);
+            if (child is T match)
+                return match;
+            if (FindVisualChild<T>(child) is { } descendant)
+                return descendant;
+        }
+
+        return null;
+    }
 
     private static void CheckResolutionSettings()
     {

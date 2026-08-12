@@ -147,6 +147,7 @@
                                  automation:AutomationProperties.AutomationId="heightText"
                                  TabIndex="3" />
                         <ToggleButton x:Name="_aspectLockButton"
+                                      Style="{StaticResource AspectLockButtonStyle}"
                                       Grid.Row="5"
                                       Grid.Column="2"
                                       Margin="6,0"
