@@ -38,6 +38,10 @@ Closing the app normally removes its virtual display and restores the previous d
 
 **Start with Windows** launches the app, not the virtual display. The notification-area icon can open the app, start or stop the display, and exit. The Minimize and Close buttons hide the app only when their matching notification-area options are enabled.
 
+## Diagnostics
+
+Runtime and crash details are written to `%LOCALAPPDATA%\Virtua Display\Logs\virtua-display.log`. At 5 MB, the current log rotates to `virtua-display.previous.log`.
+
 ## Limitations
 
 - Only one virtual display is supported.

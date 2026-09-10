@@ -44,6 +44,7 @@ public sealed partial class SettingsWindow : System.Windows.Window
         }
         catch (Exception exception)
         {
+            AppLog.Error("Settings action failed.", exception);
             ApplySettings();
             SetStatus(exception.Message, "ErrorBrush");
         }

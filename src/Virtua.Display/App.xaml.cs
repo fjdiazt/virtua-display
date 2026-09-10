@@ -9,6 +9,20 @@ public partial class App : Application
     private MainWindow? _mainWindow;
     private SettingsWindow? _settingsWindow;
 
+    public App()
+    {
+        DispatcherUnhandledException += (_, eventArgs) =>
+            AppLog.Error("Unhandled dispatcher exception.", eventArgs.Exception);
+        AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
+            AppLog.Error(
+                eventArgs.IsTerminating
+                    ? "Unhandled AppDomain exception; process terminating."
+                    : "Unhandled AppDomain exception.",
+                eventArgs.ExceptionObject as Exception);
+        TaskScheduler.UnobservedTaskException += (_, eventArgs) =>
+            AppLog.Error("Unobserved task exception.", eventArgs.Exception);
+    }
+
     protected override void OnStartup(StartupEventArgs eventArgs)
     {
         base.OnStartup(eventArgs);
@@ -38,11 +52,16 @@ public partial class App : Application
             return;
         }
 
+        AppLog.Start(
+            $"Application starting. version={typeof(App).Assembly.GetName().Version}; " +
+            $"runtime={Environment.Version}; path={Environment.ProcessPath}; " +
+            $"args=[{string.Join(", ", eventArgs.Args)}]");
         StartupRegistration.RemoveLegacy();
 
         _singleInstanceMutex = TryAcquireSingleInstance(SingleInstanceName);
         if (_singleInstanceMutex is null)
         {
+            AppLog.Info("Another instance is already running; exiting.");
             Shutdown();
             return;
         }
@@ -57,6 +76,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs eventArgs)
     {
+        AppLog.Info($"Application exiting. code={eventArgs.ApplicationExitCode}");
         _settingsWindow?.Close();
         _settingsWindow = null;
         if (_singleInstanceMutex is not null)

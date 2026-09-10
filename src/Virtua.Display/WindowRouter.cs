@@ -187,6 +187,7 @@ internal sealed class WindowRouter : IDisposable, IAsyncDisposable
             }
             catch (Exception exception)
             {
+                AppLog.Error($"Could not relocate window 0x{window.ToInt64():X}.", exception);
                 reportError?.Invoke(
                     $"Could not relocate window 0x{window.ToInt64():X}: {exception.Message}");
             }
@@ -243,6 +244,7 @@ internal sealed class WindowRouter : IDisposable, IAsyncDisposable
         }
         catch (Exception exception)
         {
+            AppLog.Error($"Could not inspect window 0x{window.ToInt64():X}.", exception);
             _reportError?.Invoke($"Could not inspect window 0x{window.ToInt64():X}: {exception.Message}");
         }
     }
@@ -257,6 +259,7 @@ internal sealed class WindowRouter : IDisposable, IAsyncDisposable
             }
             catch (Exception exception)
             {
+                AppLog.Error($"Could not route window 0x{window.ToInt64():X}.", exception);
                 _reportError?.Invoke($"Could not route window 0x{window.ToInt64():X}: {exception.Message}");
             }
         }

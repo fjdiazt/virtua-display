@@ -58,6 +58,7 @@ internal sealed class SudoVdaClient : IDisposable
         }
         catch (Exception exception)
         {
+            AppLog.Error("SudoVDA probe failed.", exception);
             return new(DriverStatusKind.Error, exception.Message);
         }
     }

@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using System.Drawing;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Automation;
@@ -19,6 +20,7 @@ internal static class SelfTest
             .Any(reference => reference.Name == "System.Windows.Forms"),
             "no Windows Forms assembly reference");
         Check(Assembly.GetExecutingAssembly().GetName().Name == "VirtuaDisplay", "assembly name");
+        CheckAppLog();
         CheckSingleInstance();
         Check(StartupRegistration.BuildCommand(@"C:\Apps\VirtuaDisplay.exe") ==
               "\"C:\\Apps\\VirtuaDisplay.exe\" --startup",
@@ -651,6 +653,50 @@ internal static class SelfTest
         finally
         {
             Registry.CurrentUser.DeleteSubKeyTree(path, false);
+        }
+    }
+
+    private static void CheckAppLog()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"VirtuaDisplay-SelfTest-{Guid.NewGuid():N}");
+        var path = Path.Combine(directory, "virtua-display.log");
+        try
+        {
+            AppLog.Write(path, "INFO", "self-test", null);
+            var text = File.ReadAllText(path);
+            var fields = text.Split(" | ", 5);
+            Check(fields.Length == 5 &&
+                  DateTimeOffset.TryParse(fields[0], out _) &&
+                  fields[1] == "INFO" &&
+                  fields[2] == $"pid={Environment.ProcessId}" &&
+                  fields[3].StartsWith("tid=", StringComparison.Ordinal) &&
+                  fields[4].TrimEnd() == "self-test",
+                "application log entry metadata");
+
+            Exception captured;
+            try
+            {
+                throw new InvalidOperationException("logged boom");
+            }
+            catch (Exception exception)
+            {
+                captured = exception;
+            }
+            AppLog.Write(path, "ERROR", "self-test exception", captured);
+            text = File.ReadAllText(path);
+            Check(text.Contains("System.InvalidOperationException: logged boom", StringComparison.Ordinal) &&
+                  text.Contains(nameof(CheckAppLog), StringComparison.Ordinal),
+                "application log exception stack");
+
+            File.WriteAllBytes(path, new byte[5 * 1024 * 1024]);
+            AppLog.Write(path, "INFO", "after rotation", null);
+            Check(File.Exists(Path.Combine(directory, "virtua-display.previous.log")) &&
+                  File.ReadAllText(path).Contains("after rotation", StringComparison.Ordinal),
+                "application log rotation");
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
         }
     }
 

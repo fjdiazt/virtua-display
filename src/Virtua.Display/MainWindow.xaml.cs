@@ -56,6 +56,8 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         SourceInitialized += (_, _) => ApplyDarkCaption();
         _driverStatus = driverStatus ?? SudoVdaClient.Probe();
+        if (driverStatus is null)
+            AppLog.Info($"Driver status: {_driverStatus.Kind}; {_driverStatus.Message}");
         _primaryMode = primaryMode ?? DisplayController.GetPrimaryMode();
         _lastValidSettings = settings ?? UserSettingsStore.Load(_primaryMode);
         _saveSettings = saveSettings ?? (value => UserSettingsStore.Save(value));
@@ -337,7 +339,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            SetStatusError($"Settings save failed: {exception.Message}");
+            SetStatusError($"Settings save failed: {exception.Message}", exception);
         }
     }
 
@@ -389,7 +391,7 @@ public sealed partial class MainWindow : Window
             WindowState = WindowState.Normal;
             if (!IsVisible)
                 Show();
-            SetStatusError($"Could not minimize to notification area: {exception.Message}");
+            SetStatusError($"Could not minimize to notification area: {exception.Message}", exception);
         }
     }
 
@@ -500,6 +502,7 @@ public sealed partial class MainWindow : Window
             }
             catch (Exception exception)
             {
+                AppLog.Error("Session recovery failed.", exception);
                 var errors = new List<string> { exception.Message };
                 await TryCleanupAsync(async () =>
                 {
@@ -595,6 +598,7 @@ public sealed partial class MainWindow : Window
             }
             catch (Exception exception)
             {
+                AppLog.Error("Virtual display start failed.", exception);
                 var cleanupErrors = await CleanupPartialStartAsync(
                     snapshot,
                     driver,
@@ -662,6 +666,7 @@ public sealed partial class MainWindow : Window
             }
             catch (Exception exception)
             {
+                AppLog.Error("Virtual display removal failed.", exception);
                 errors.Add($"remove virtual display: {exception.Message}");
             }
             if (removed)
@@ -750,6 +755,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
+            AppLog.Error("SudoVDA watchdog failed.", exception);
             ReportBackgroundError($"SudoVDA watchdog failed: {exception.Message}");
         }
     }
@@ -765,6 +771,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
+            AppLog.Error($"Cleanup failed: {operation}.", exception);
             errors.Add($"{operation}: {exception.Message}");
         }
     }
@@ -785,6 +792,7 @@ public sealed partial class MainWindow : Window
 
     internal void SetUiState(string status, bool busy, bool active, bool error = false)
     {
+        AppLog.Info($"State: {status}");
         _statusLabel.Text = status;
         var brushKey = error
             ? "ErrorBrush"
@@ -808,8 +816,9 @@ public sealed partial class MainWindow : Window
         UpdateStartStopEnabled();
     }
 
-    private void SetStatusError(string status)
+    private void SetStatusError(string status, Exception? exception = null)
     {
+        AppLog.Error(status, exception);
         _statusLabel.Text = status;
         _statusIndicator.Foreground = (Brush)FindResource("ErrorBrush");
     }
